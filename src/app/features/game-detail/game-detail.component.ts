@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { BacklogService } from '../../core/services/backlog.service';
+import { SteamPriceData } from '../../core/models/backlog.model';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -19,14 +20,15 @@ export class GameDetailComponent implements OnInit {
 
   public game = signal<any | null>(null);
   public keyStores = signal<any[]>([]);
+  public steamPrice = signal<SteamPriceData | null>(null); // Nouveau signal pour stocker le prix Steam
   public loading = signal<boolean>(true);
+  public loadingPrice = signal<boolean>(false);
 
   async ngOnInit() {
     const gameSlug = this.route.snapshot.paramMap.get('slug');
     if (gameSlug) {
       const details = await this.backlogService.getGameDetails(gameSlug);
       if (details) {
-        // Injection de la simulation HLTB pour que la vue n'affiche pas du vide
         details.hltb = {
           main: Math.floor((details.name.length % 20) + 12),
           extra: Math.floor((details.name.length % 35) + 22),
@@ -34,11 +36,36 @@ export class GameDetailComponent implements OnInit {
         };
         this.game.set(details);
         
+        // --- EXTRACTION ET CHARGEMENT DU PRIX STEAM ---
+        const steamStore = details.stores?.find((s: any) => s.store.slug === 'steam');
+        if (steamStore && steamStore.url) {
+          const matches = steamStore.url.match(/\/app\/(\d+)/);
+          if (matches && matches[1]) {
+            this.fetchSteamPrice(matches[1]);
+          }
+        }
+
         // Lancement de la recherche de prix de clés
         await this.fetchKeyPrices(details.name);
       }
     }
     this.loading.set(false);
+  }
+
+  fetchSteamPrice(appId: string) {
+    this.loadingPrice.set(true);
+    this.backlogService.getSteamPrice(appId).subscribe({
+      next: (priceData) => {
+        if (priceData.success) {
+          this.steamPrice.set(priceData);
+        }
+        this.loadingPrice.set(false);
+      },
+      error: (err) => {
+        console.error('Erreur de récupération du prix Steam local:', err);
+        this.loadingPrice.set(false);
+      }
+    });
   }
 
   async fetchKeyPrices(gameName: string) {
@@ -52,7 +79,6 @@ export class GameDetailComponent implements OnInit {
         const deals: any = await firstValueFrom(this.http.get(dealUrl));
         
         if (deals && deals.deals) {
-          // Tri par prix croissant
           const sortedDeals = deals.deals.sort((a: any, b: any) => parseFloat(a.price) - parseFloat(b.price));
           this.keyStores.set(sortedDeals);
         }

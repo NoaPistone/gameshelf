@@ -2,7 +2,23 @@
   <a routerLink="/" class="back-btn">◀ Retour au tableau de bord</a>
 
   <div class="steam-header-row">
-    <h1 class="steam-title">{{ game().name }}</h1>
+    <div class="title-with-price">
+      <h1 class="steam-title">{{ game().name }}</h1>
+      
+      <div class="steam-price-badge-container" *ngIf="steamPrice()">
+        <div class="steam-discount-layout" *ngIf="steamPrice()?.isDiscounted">
+          <span class="steam-discount-pct">-{{ steamPrice()?.discountPercent }}%</span>
+          <div class="steam-prices">
+            <span class="steam-old-price">{{ steamPrice()?.initialPrice }}</span>
+            <span class="steam-final-price">{{ steamPrice()?.finalPrice }}</span>
+          </div>
+        </div>
+        <div class="steam-normal-layout" *ngIf="!steamPrice()?.isDiscounted">
+          <span class="steam-final-price">{{ steamPrice()?.finalPrice }}</span>
+        </div>
+      </div>
+    </div>
+
     <a [href]="'https://store.steampowered.com/search/?term=' + game().name" target="_blank" class="steam-external-link">
       ➔ Voir la page Steam Officielle
     </a>
