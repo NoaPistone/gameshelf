@@ -75,15 +75,16 @@ export class BacklogService {
 
   // --- GESTION DU CALENDRIER (HOME) ---
 
+ // --- GESTION DU CALENDRIER (HOME) ---
+  
   /**
    * 1. MÉTHODE PURE (Utilisable sans risque dans un computed)
-   * Renvoie les données ou une structure par défaut vide sans jamais faire de .set()
    */
   public getMonthData(monthKey: string) {
     const current = this.calendarData();
     if (!current[monthKey]) {
       return {
-        gamesBought: [],
+        gamesBought: [], // Contiendra désormais des objets { name: string, image: string }
         gamesStarted: [],
         gamesFinished: [],
         gamesPlayed100: []
@@ -94,7 +95,6 @@ export class BacklogService {
 
   /**
    * 2. INITIALISATION ASYNC / SÉCURISÉE (Appelée par un effect)
-   * Crée la structure par défaut dans le signal si elle n'existe pas encore
    */
   public initializeMonthStructure(monthKey: string) {
     const current = this.calendarData();
@@ -199,6 +199,9 @@ export class BacklogService {
   }
 
   // --- RECHERCHE ET APPELS API RAWG POPULAIRES ---
+  // --- RECHERCHE ET APPELS API RAWG POPULAIRES ---
+  
+  // 1. Pour la barre de recherche PRINCIPALE
   async searchGames(query: string) {
     if (!query.trim()) {
       this.searchResults.set([]);
@@ -206,9 +209,17 @@ export class BacklogService {
     }
     this.isSearching.set(true);
     try {
-      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${encodeURIComponent(query)}&ordering=-added&page_size=8`;
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${encodeURIComponent(query)}&ordering=-added&page_size=20`; // On augmente la page_size pour avoir plus de choix à filtrer
       const response: any = await firstValueFrom(this.http.get(url));
-      this.searchResults.set(response.results || []);
+      const rawResults = response.results || [];
+
+      // FILTRE STRICT : Le nom du jeu doit contenir EXACTEMENT la query (en minuscules)
+      const strictResults = rawResults.filter((game: any) => 
+        game.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      // On ne garde que les 8 premiers résultats filtrés
+      this.searchResults.set(strictResults.slice(0, 8));
     } catch (error) {
       console.error('Erreur de recherche globale:', error);
     } finally {
@@ -216,11 +227,19 @@ export class BacklogService {
     }
   }
 
+  // 2. Pour les barres de recherche DES COLONNES du calendrier
   async searchGamesDirect(query: string): Promise<any[]> {
     try {
-      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${encodeURIComponent(query)}&ordering=-added&page_size=5`;
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${encodeURIComponent(query)}&ordering=-added&page_size=20`;
       const response: any = await firstValueFrom(this.http.get(url));
-      return response.results || [];
+      const rawResults = response.results || [];
+
+      // FILTRE STRICT : Même logique ici
+      const strictResults = rawResults.filter((game: any) => 
+        game.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+      return strictResults.slice(0, 5);
     } catch (error) {
       return [];
     }

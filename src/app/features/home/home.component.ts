@@ -4,14 +4,16 @@ import { FormsModule } from '@angular/forms';
 import { BacklogService } from '../../core/services/backlog.service';
 import { Router, RouterModule } from '@angular/router'; 
 
+// Définition d'un type strict pour éviter les erreurs d'indexation
+export type CalendarCategory = 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100';
+
 @Component({
   selector: 'app-home',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
-}
-)
+})
 export class HomeComponent {
   public backlogService = inject(BacklogService);
   private router = inject(Router);
@@ -26,6 +28,9 @@ export class HomeComponent {
   public currentMonth = signal<number>(5); // 5 correspond à Juin (0 = Janvier)
   public months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   
+  // Tableau des catégories typé strictement pour le *ngFor du template HTML
+  public calendarCategories: CalendarCategory[] = ['gamesBought', 'gamesStarted', 'gamesFinished', 'gamesPlayed100'];
+
   public monthKey = computed(() => `${this.currentYear()}-${(this.currentMonth() + 1).toString().padStart(2, '0')}`);
   
   // Correction de l'erreur NG0600 : utilisation de getMonthData (qui est pure)
@@ -38,6 +43,7 @@ export class HomeComponent {
     gamesFinished: signal<string>(''),
     gamesPlayed100: signal<string>('')
   };
+  
   public columnResults = {
     gamesBought: signal<any[]>([]),
     gamesStarted: signal<any[]>([]),
@@ -57,7 +63,7 @@ export class HomeComponent {
     this.backlogService.searchGames(this.searchQuery());
   }
 
-  async onColumnSearchChange(cat: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100') {
+  async onColumnSearchChange(cat: CalendarCategory) {
     const query = this.columnInputs[cat]();
     if (query.trim().length < 2) {
       this.columnResults[cat].set([]);
@@ -71,9 +77,16 @@ export class HomeComponent {
     this.router.navigate(['/game', slug]);
   }
 
-  addItemDirectly(cat: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100', title: string) {
+  addItemDirectly(cat: CalendarCategory, game: any) {
     const d = { ...this.monthData() };
-    d[cat] = [...d[cat], title];
+    
+    // On crée un objet structuré avec le nom et l'image récupérée de l'API RAWG
+    const gameItem = {
+      name: game.name,
+      image: game.background_image || 'assets/images/placeholder-game.jpg'
+    };
+
+    d[cat] = [...d[cat], gameItem];
     
     // Met à jour le calendrier et lance la sauvegarde LocalStorage automatique
     this.backlogService.updateMonthData(this.monthKey(), d);
@@ -83,7 +96,7 @@ export class HomeComponent {
     this.columnResults[cat].set([]);
   }
 
-  removeItem(cat: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100', i: number) { 
+  removeItem(cat: CalendarCategory, i: number) { 
     const d = { ...this.monthData() }; 
     d[cat] = d[cat].filter((_: any, idx: number) => idx !== i); 
     
