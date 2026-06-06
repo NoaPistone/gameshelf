@@ -1,0 +1,72 @@
+<div class="library-container">
+  <h1>📚 Gestion de ma Bibliothèque Globale</h1>
+
+  <div class="import-actions-bar">
+    <div class="import-card">
+      <h3>📊 Import de liste Excel / CSV</h3>
+      <input type="file" accept=".xlsx, .xls, .csv" (change)="onExcelFileSelected($event)" [disabled]="isExcelLoading()" id="excel-upload" class="file-input" />
+      <label for="excel-upload" class="action-btn-label">📁 Sélectionner un fichier Excel</label>
+      <p *ngIf="isExcelLoading()" class="loading-status">Analyse du fichier de données en cours...</p>
+    </div>
+
+    <div class="import-card">
+      <h3>📷 Numérisation d'image (OCR Global)</h3>
+      <input type="file" accept="image/*" (change)="onOcrFileSelected($event)" [disabled]="isOcrLoading()" id="ocr-upload" class="file-input" />
+      <label for="ocr-upload" class="action-btn-label">📸 Prendre / Choisir une photo</label>
+      <p *ngIf="isOcrLoading()" class="loading-status">Reconnaissance de caractères active...</p>
+    </div>
+  </div>
+
+  <div class="pack-creation-box">
+    <h2>📦 Créer une nouvelle collection / Pack personnalisé</h2>
+    <div class="pack-input-row">
+      <input type="text" [(ngModel)]="newPackName" placeholder="Ex: Jeux JRPG à faire cet été, Jeux Coop..." class="pack-input" />
+      <button (click)="onCreatePack()" class="create-pack-btn">Créer la collection</button>
+    </div>
+  </div>
+
+  <div class="library-layout-grid">
+    
+    <div class="packs-section">
+      <h2>📁 Mes Collections Dynamiques</h2>
+      <p *ngIf="packs().length === 0" class="empty-info">Aucun pack de jeux créé pour le moment.</p>
+      
+      <div class="pack-card" *ngFor="let pack of packs()">
+        <div class="pack-header">
+          <h3>📦 {{ pack.name }}</h3>
+          <div class="pack-actions">
+            <input type="file" accept="image/*" (change)="onPackImageSelected(pack.id, $event)" [id]="'pack-file-' + pack.id" class="file-input" />
+            <label [for]="'pack-file-' + pack.id" class="btn-small-scan">⚡ Scanner image pour ce pack</label>
+          </div>
+        </div>
+
+        <ul class="pack-games-list">
+          <li *ngFor="let game of pack.games" class="pack-game-item">
+            <span class="game-name">🎮 {{ game.name }}</span>
+            <div class="status-selector-wrapper">
+              <select [value]="game.status || 'À faire'" (change)="onStatusChange(pack.id, game.id, $event)" class="status-dropdown">
+                <option value="À faire">À faire</option>
+                <option value="En cours">En cours</option>
+                <option value="Terminé">Terminé</option>
+                <option value="Abandonné">Abandonné</option>
+              </select>
+            </div>
+          </li>
+          <li *ngIf="pack.games.length === 0" class="empty-pack-item">Glissez ou scannez des jeux pour remplir ce pack.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="global-items-section">
+      <h2>🗂 Liste de tous les jeux importés ({{ globalLibrary().length }})</h2>
+      <div class="global-games-list">
+        <div class="global-game-row" *ngFor="let g of globalLibrary()">
+          <span class="game-row-title">📌 {{ g.name }}</span>
+          <span class="badge-status-generic">{{ g.status || 'Importé' }}</span>
+        </div>
+        <p *ngIf="globalLibrary().length === 0" class="empty-info">Votre bibliothèque globale est vide. Utilisez les modules Excel ou OCR ci-dessus pour l'alimenter.</p>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,47 +1,204 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Game, GamePack, CalendarMonthData } from '../models/backlog.model';
 import { firstValueFrom } from 'rxjs';
-import * as XLSX from 'xlsx';
+
+// Interface pour typer correctement les structures de la bibliothèque
+export interface Game {
+  id: string | number;
+  name: string;
+  background_image?: string;
+  status?: string;
+}
+
+export interface GamePack {
+  id: string;
+  name: string;
+  games: Game[];
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class BacklogService {
-  private http = inject(HttpClient);
-
-  // --- CONFIGURATION API RAWG ---
-  private apiKey = '751a79579994490aaa29bf0f1bd944a8'; 
+  private apiKey = '751a79579994490aaa29bf0f1bd944a8';
   private baseUrl = 'https://api.rawg.io/api';
 
-  // --- ÉTATS GLOBAUX ---
-  public globalLibrary = signal<Game[]>([]);
-  public packs = signal<GamePack[]>([]);
-  public calendarData = signal<Record<string, CalendarMonthData>>({});
-
-  // Signaux pour l'accueil et la recherche API
+  // Signals pour le Dashboard (Home)
   public latestGames = signal<any[]>([]);
   public searchResults = signal<any[]>([]);
   public isSearching = signal<boolean>(false);
 
-  constructor() {
-    this.initMockData();
-    this.fetchLatestGames(); // Charge les nouveautés RAWG au démarrage
+  // Données du Dashboard (Chronologie)
+  private calendarData = signal<{ [key: string]: any }>({});
+
+  // Signals pour la Bibliothèque (Library)
+  public globalLibrary = signal<Game[]>([]);
+  public packs = signal<GamePack[]>([]);
+
+  constructor(private http: HttpClient) {
+    this.loadFromLocalStorage();
+    this.fetchLatestGames();
   }
 
-  // 1. Récupérer les dernières sorties de jeux vidéo
-  async fetchLatestGames() {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const url = `${this.baseUrl}/games?key=${this.apiKey}&dates=2025-12-01,${today}&ordering=-released&page_size=6`;
-      const response: any = await firstValueFrom(this.http.get(url));
-      this.latestGames.set(response.results || []);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des sorties:', error);
+  // --- SAUVEGARDE & CHARGEMENT LOCALSTORAGE ---
+  private loadFromLocalStorage() {
+    // Chargement du calendrier
+    const savedCalendar = localStorage.getItem('gameshelf_backlog_data');
+    if (savedCalendar) {
+      try { this.calendarData.set(JSON.parse(savedCalendar)); } catch (e) { this.calendarData.set({}); }
+    }
+
+    // Chargement de la bibliothèque globale
+    const savedLibrary = localStorage.getItem('gameshelf_global_library');
+    if (savedLibrary) {
+      try { this.globalLibrary.set(JSON.parse(savedLibrary)); } catch (e) { this.globalLibrary.set([]); }
+    }
+
+    // Chargement des packs de la bibliothèque
+    const savedPacks = localStorage.getItem('gameshelf_packs');
+    if (savedPacks) {
+      try { this.packs.set(JSON.parse(savedPacks)); } catch (e) { this.packs.set([]); }
     }
   }
 
-  // 2. Recherche de jeux (Barre de recherche de l'accueil)
+  private saveCalendarToLocalStorage() {
+    localStorage.setItem('gameshelf_backlog_data', JSON.stringify(this.calendarData()));
+  }
+
+  private saveLibraryToLocalStorage() {
+    localStorage.setItem('gameshelf_global_library', JSON.stringify(this.globalLibrary()));
+  }
+
+  private savePacksToLocalStorage() {
+    localStorage.setItem('gameshelf_packs', JSON.stringify(this.packs()));
+  }
+
+  // --- GESTION DU CALENDRIER (HOME) ---
+
+  /**
+   * 1. MÉTHODE PURE (Utilisable sans risque dans un computed)
+   * Renvoie les données ou une structure par défaut vide sans jamais faire de .set()
+   */
+  public getMonthData(monthKey: string) {
+    const current = this.calendarData();
+    if (!current[monthKey]) {
+      return {
+        gamesBought: [],
+        gamesStarted: [],
+        gamesFinished: [],
+        gamesPlayed100: []
+      };
+    }
+    return current[monthKey];
+  }
+
+  /**
+   * 2. INITIALISATION ASYNC / SÉCURISÉE (Appelée par un effect)
+   * Crée la structure par défaut dans le signal si elle n'existe pas encore
+   */
+  public initializeMonthStructure(monthKey: string) {
+    const current = this.calendarData();
+    if (!current[monthKey]) {
+      current[monthKey] = {
+        gamesBought: [],
+        gamesStarted: [],
+        gamesFinished: [],
+        gamesPlayed100: []
+      };
+      this.calendarData.set({ ...current });
+      this.saveCalendarToLocalStorage();
+    }
+  }
+
+  /**
+   * 3. MISE A JOUR DES DONNÉES D'UN MOIS
+   */
+  public updateMonthData(monthKey: string, newData: any) {
+    const current = this.calendarData();
+    current[monthKey] = newData;
+    this.calendarData.set({ ...current });
+    this.saveCalendarToLocalStorage();
+  }
+
+  // --- GESTION DE LA BIBLIOTHÈQUE & PACKS (LIBRARY) ---
+  public addPack(name: string) {
+    if (!name.trim()) return;
+    const newPack: GamePack = {
+      id: 'pack_' + Date.now(),
+      name: name,
+      games: []
+    };
+    this.packs.set([...this.packs(), newPack]);
+    this.savePacksToLocalStorage();
+  }
+
+  public updateGameStatusInPack(packId: string, gameId: string | number, status: string) {
+    const updatedPacks = this.packs().map(pack => {
+      if (pack.id === packId) {
+        const updatedGames = pack.games.map(game => {
+          if (game.id === gameId) {
+            return { ...game, status: status };
+          }
+          return game;
+        });
+        return { ...pack, games: updatedGames };
+      }
+      return pack;
+    });
+    this.packs.set(updatedPacks);
+    this.savePacksToLocalStorage();
+  }
+
+  // Simulation d'import Excel
+  public async importExcelData(file: File): Promise<Partial<Game>[]> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: 'ex_1', name: 'The Witcher 3: Wild Hunt' },
+          { id: 'ex_2', name: 'Cyberpunk 2077' },
+          { id: 'ex_3', name: 'Red Dead Redemption 2' }
+        ]);
+      }, 1000);
+    });
+  }
+
+  // Simulation OCR depuis une image
+  public async simulateOCRFromImage(file: File): Promise<string[]> {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(['Elden Ring', 'Hades', 'Hollow Knight']);
+      }, 1200);
+    });
+  }
+
+  // Import direct d'une image dans un pack
+  public async importImageToPack(packId: string, file: File): Promise<void> {
+    const titles = await this.simulateOCRFromImage(file);
+    const mockGames: Game[] = titles.map((title, index) => ({
+      id: `ocr_${Date.now()}_${index}`,
+      name: title,
+      background_image: 'assets/images/mock-game.jpg',
+      status: 'À faire'
+    }));
+
+    const updatedPacks = this.packs().map(pack => {
+      if (pack.id === packId) {
+        return { ...pack, games: [...pack.games, ...mockGames] };
+      }
+      return pack;
+    });
+
+    this.packs.set(updatedPacks);
+    this.savePacksToLocalStorage();
+  }
+
+  // Mettre à jour la bibliothèque globale complète (utilisée lors des imports réussis)
+  public updateGlobalLibrary(games: Game[]) {
+    this.globalLibrary.set(games);
+    this.saveLibraryToLocalStorage();
+  }
+
+  // --- RECHERCHE ET APPELS API RAWG POPULAIRES ---
   async searchGames(query: string) {
     if (!query.trim()) {
       this.searchResults.set([]);
@@ -49,84 +206,42 @@ export class BacklogService {
     }
     this.isSearching.set(true);
     try {
-      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${query}&page_size=8`;
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${encodeURIComponent(query)}&ordering=-added&page_size=8`;
       const response: any = await firstValueFrom(this.http.get(url));
       this.searchResults.set(response.results || []);
     } catch (error) {
-      console.error('Erreur pendant la recherche:', error);
+      console.error('Erreur de recherche globale:', error);
     } finally {
       this.isSearching.set(false);
     }
   }
 
-  // --- MOCK DATA (Avec hltbMain conforme à votre modèle étendu) ---
-  private initMockData() {
-    this.globalLibrary.set([
-      { id: 'g1', title: 'The Witcher 3', developer: 'CD Projekt', status: 'Fini', hltbMain: 50 },
-      { id: 'g2', title: 'Cyberpunk 2077', developer: 'CD Projekt', status: 'En cours', hltbMain: 25 },
-      { id: 'g3', title: 'Hades', developer: 'Supergiant Games', status: 'À faire', hltbMain: 20 }
-    ]);
-    this.calendarData.set({ 
-      '2026-06': { monthKey: '2026-06', gamesBought: ['Hades II'], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] } 
-    });
-  }
-
-  // --- GESTION DES PACKS ET UTILITAIRES ---
-  addPack(name: string) { 
-    const newPack: GamePack = { id: 'pack_' + Date.now(), name, games: [] }; 
-    this.packs.update(p => [...p, newPack]); 
-  }
-
-  updateGameStatusInPack(packId: string, gameId: string, newStatus: Game['status']) { 
-    this.packs.update(allPacks => allPacks.map((p: any) => p.id === packId ? { 
-      ...p, 
-      games: p.games.map((g: any) => g.id === gameId ? { ...g, status: newStatus } : g) 
-    } : p)); 
-  }
-
-  simulateOCRFromImage(file: File): Promise<string[]> { 
-    return new Promise((r) => setTimeout(() => r(['Hollow Knight', 'Celeste']), 1000)); 
-  }
-
-  async importImageToPack(packId: string, file: File) { 
-    const titles = await this.simulateOCRFromImage(file); 
-    const newGames: Game[] = titles.map((title, i) => ({ id: `ocr_${Date.now()}_${i}`, title, status: 'À faire' })); 
-    this.packs.update(allPacks => allPacks.map(p => p.id === packId ? { ...p, games: [...p.games, ...newGames] } : p)); 
-  }
-
-  importExcelData(file: File): Promise<Partial<Game>[]> { 
-    return new Promise((res) => res([])); 
-  }
-
-  getOrCreateMonthData(monthKey: string): CalendarMonthData { 
-    const current = this.calendarData(); 
-    return current[monthKey] || { monthKey, gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] }; 
-  }
-
-  updateMonthData(monthKey: string, data: CalendarMonthData) { 
-    this.calendarData.update(current => ({ ...current, [monthKey]: data })); 
-  }
-  // Récupérer les détails complets d'un jeu pour la vue Steam (Description, éditeurs, etc.)
-  async getGameDetails(id: number | string): Promise<any> {
-    try {
-      const url = `${this.baseUrl}/games/${id}?key=${this.apiKey}`;
-      return await firstValueFrom(this.http.get(url));
-    } catch (error) {
-      console.error('Erreur lors de la récupération des détails RAWG:', error);
-      return null;
-    }
-  }
-
-  // Recherche rapide simplifiée qui renvoie directement un tableau (pour les inputs du calendrier)
   async searchGamesDirect(query: string): Promise<any[]> {
-    if (!query.trim()) return [];
     try {
-      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${query}&page_size=5`;
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${encodeURIComponent(query)}&ordering=-added&page_size=5`;
       const response: any = await firstValueFrom(this.http.get(url));
       return response.results || [];
     } catch (error) {
-      console.error('Erreur recherche directe:', error);
       return [];
+    }
+  }
+
+  async fetchLatestGames() {
+    try {
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&ordering=-released&page_size=4`;
+      const response: any = await firstValueFrom(this.http.get(url));
+      this.latestGames.set(response.results || []);
+    } catch (error) {
+      console.error('Erreur nouveautés:', error);
+    }
+  }
+
+  async getGameDetails(slug: string): Promise<any | null> {
+    try {
+      const url = `${this.baseUrl}/games/${slug}?key=${this.apiKey}`;
+      return await firstValueFrom(this.http.get(url));
+    } catch (error) {
+      return null;
     }
   }
 }

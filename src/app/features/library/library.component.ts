@@ -1,8 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BacklogService } from '../../core/services/backlog.service';
-import { Game } from '../../core/models/backlog.model';
+import { BacklogService, Game, GamePack } from '../../core/services/backlog.service';
 
 @Component({
   selector: 'app-library',
@@ -13,93 +12,82 @@ import { Game } from '../../core/models/backlog.model';
 })
 export class LibraryComponent {
   public backlogService = inject(BacklogService);
-  
+
   public globalLibrary = this.backlogService.globalLibrary;
   public packs = this.backlogService.packs;
 
   public newPackName = '';
-  public isImageDragging = false;
-  public isExcelDragging = false;
-  public activePackDragId: string | null = null;
-  public isOcrLoading = signal<Record<string, boolean>>({});
+  public isExcelLoading = signal<boolean>(false);
+  public isOcrLoading = signal<boolean>(false);
 
-  // --- ACTIONS PACK DYNAMIQUE ---
-  createPack() {
-    if (!this.newPackName.trim()) return;
-    this.backlogService.addPack(this.newPackName.trim());
-    this.newPackName = '';
-  }
-
-  updateStatus(packId: string, gameId: string, event: Event) {
-    const select = event.target as HTMLSelectElement;
-    this.backlogService.updateGameStatusInPack(packId, gameId, select.value as Game['status']);
-  }
-
-  // --- GESTION DRAG & DROP BIBLIOTHÈQUE ---
-  onDragOver(event: DragEvent, type: 'image' | 'excel') {
-    event.preventDefault();
-    if (type === 'image') this.isImageDragging = true;
-    if (type === 'excel') this.isExcelDragging = true;
-  }
-
-  onDragLeave(type: 'image' | 'excel') {
-    if (type === 'image') this.isImageDragging = false;
-    if (type === 'excel') this.isExcelDragging = false;
-  }
-
-  async onDropGlobal(event: DragEvent, type: 'image' | 'excel') {
-    event.preventDefault();
-    this.onDragLeave(type);
-    const files = event.dataTransfer?.files;
-    if (!files || files.length === 0) return;
-
-    if (type === 'excel') {
-      const partialGames = await this.backlogService.importExcelData(files[0]);
-      // On enrichit la bibliothèque de base avec les données Excel croisées
-      const enriched: Game[] = partialGames.map((pg, i) => ({
-        id: `xls_${Date.now()}_${i}`,
-        title: pg.title || 'Jeu inconnu',
-        developer: pg.developer || 'N/A',
-        publisher: pg.publisher || 'N/A',
-        hltbMain: pg.hltbMain,
-        hltbExtra: pg.hltbExtra,
-        hltbCompletionist: pg.hltbCompletionist,
-        status: 'À faire'
-      }));
-      this.globalLibrary.set([...this.globalLibrary(), ...enriched]);
-    } else if (type === 'image') {
-      // Simulation OCR globale
-      const titles = await this.backlogService.simulateOCRFromImage(files[0]);
-      const ocrGames: Game[] = titles.map((t, i) => ({
-        id: `global_ocr_${Date.now()}_${i}`,
-        title: t,
-        status: 'À faire'
-      }));
-      this.globalLibrary.set([...this.globalLibrary(), ...ocrGames]);
+  onCreatePack() {
+    if (this.newPackName.trim()) {
+      this.backlogService.addPack(this.newPackName.trim());
+      this.newPackName = '';
     }
   }
 
-  // --- GESTION DRAG & DROP PACK SPECIFIQUE ---
-  onPackDragOver(event: DragEvent, packId: string) {
-    event.preventDefault();
-    this.activePackDragId = packId;
+  onStatusChange(packId: string, gameId: string | number, event: Event) {
+    const selectElement = event.target as HTMLSelectElement;
+    this.backlogService.updateGameStatusInPack(packId, gameId, selectElement.value);
   }
 
-  onPackDragLeave() {
-    this.activePackDragId = null;
+  async onExcelFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.isExcelLoading.set(true);
+      try {
+        const partialGames = await this.backlogService.importExcelData(input.files[0]);
+        
+        // CORRECTION DE TYPAGE : Définition claire des types pour 'pg' (jeu partiel) et 'i' (index)
+        const enriched: Game[] = partialGames.map((pg: any, i: number) => ({
+          id: pg.id || `xl_${Date.now()}_${i}`,
+          name: pg.name || 'Jeu Inconnu',
+          background_image: 'assets/images/excel-placeholder.jpg',
+          status: 'À faire'
+        }));
+
+        this.backlogService.updateGlobalLibrary([...this.globalLibrary(), ...enriched]);
+      } catch (error) {
+        console.error("Erreur durant l'import Excel :", error);
+      } finally {
+        this.isExcelLoading.set(false);
+      }
+    }
   }
 
-  async onPackDrop(event: DragEvent, packId: string) {
-    event.preventDefault();
-    this.activePackDragId = null;
-    const files = event.dataTransfer?.files;
-    if (!files || files.length === 0) return;
+  async onOcrFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.isOcrLoading.set(true);
+      try {
+        const titles = await this.backlogService.simulateOCRFromImage(input.files[0]);
+        
+        // CORRECTION DE TYPAGE : Définition claire des types pour 't' (titre texte) et 'i' (index)
+        const ocrGames: Game[] = titles.map((t: string, i: number) => ({
+          id: `ocr_${Date.now()}_${i}`,
+          name: t,
+          background_image: 'assets/images/ocr-placeholder.jpg',
+          status: 'À faire'
+        }));
 
-    // Déclenchement de l'état de chargement IA pour ce pack
-    this.isOcrLoading.update(prev => ({ ...prev, [packId]: true }));
-    
-    await this.backlogService.importImageToPack(packId, files[0]);
-    
-    this.isOcrLoading.update(prev => ({ ...prev, [packId]: false }));
+        this.backlogService.updateGlobalLibrary([...this.globalLibrary(), ...ocrGames]);
+      } catch (error) {
+        console.error("Erreur durant l'analyse de l'image :", error);
+      } finally {
+        this.isOcrLoading.set(false);
+      }
+    }
+  }
+
+  async onPackImageSelected(packId: string, event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      try {
+        await this.backlogService.importImageToPack(packId, input.files[0]);
+      } catch (error) {
+        console.error("Erreur d'import d'image dans le pack :", error);
+      }
+    }
   }
 }
