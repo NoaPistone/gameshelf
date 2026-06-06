@@ -1,0 +1,34 @@
+<div class="steam-page-container" *ngIf="!loading() && game(); else loader">
+  <a routerLink="/" class="back-btn">◀ Retour à l'accueil</a>
+
+  <h1 class="steam-title">{{ game().name }}</h1>
+
+  <div class="steam-layout">
+    <div class="steam-media">
+      <img [src]="game().background_image" class="main-img" />
+    </div>
+
+    <div class="steam-sidebar">
+      <img [src]="game().background_image_additional || game().background_image" class="mini-banner" />
+      <div class="description" [innerHTML]="game().description"></div>
+      
+      <div class="meta-grid">
+        <div class="label">DATE DE PARUTION :</div>
+        <div class="val">{{ game().released | date:'d MMM yyyy' }}</div>
+        <div class="label">DÉVELOPPEUR :</div>
+        <div class="val"><span *ngFor="let d of game().developers">{{ d.name }} </span></div>
+        <div class="label">ÉDITEUR :</div>
+        <div class="val"><span *ngFor="let p of game().publishers">{{ p.name }} </span></div>
+      </div>
+
+      <div class="hltb-notice">
+        <h4>⏱ Données de jeu (HLTB)</h4>
+        <p>Les données réelles requièrent un serveur d'API scraping dédié.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #loader>
+  <div class="loader-text">Chargement des détails depuis le catalogue...</div>
+</ng-template>

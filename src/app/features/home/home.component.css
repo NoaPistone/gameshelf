@@ -1,103 +1,108 @@
-.search-section {
-  position: relative;
-  margin-bottom: 30px;
+/* --- SECTION CHRONOLOGIE (STABLE) --- */
+.calendar-section {
+  margin-top: 2rem;
 }
 
-.search-box {
+.calendar-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  margin-bottom: 2rem;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Force l'affichage en 4 colonnes équitables */
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Encapsulation de chaque colonne */
+.calendar-col {
+  background-color: #161616;
   border-radius: 8px;
-  padding: 5px 15px;
+  padding: 1.25rem;
+  border: 1px solid #252525;
+  box-sizing: border-box;
+  min-height: 350px;
+  display: flex;
+  flex-direction: column;
 }
 
-.search-icon {
-  font-size: 1.2rem;
-  margin-right: 10px;
-  color: var(--text-muted);
+.calendar-col h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.05rem;
+  border-bottom: 2px solid #2a2a2a;
+  padding-bottom: 0.5rem;
 }
 
-.search-box input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  padding: 10px 0;
-  font-size: 1.1rem;
+/* Le conteneur de l'input doit être en position relative pour bloquer la liste déroulante */
+.input-group-container {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1.25rem;
 }
 
-.search-results-overlay {
+.input-group input {
+  width: 100%;
+  background: #222;
+  border: 1px solid #3a3a3a;
+  color: white;
+  padding: 0.6rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+/* LISTE FLOTTANTE PAR COLONNE : Elle flotte au-dessus sans casser le reste */
+.col-search-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 0 0 8px 8px;
-  z-index: 10;
-  max-height: 400px;
+  background: #1f1f1f;
+  border: 1px solid #3d3d3d;
+  border-radius: 6px;
+  padding: 0;
+  margin: 4px 0 0 0;
+  list-style: none;
+  z-index: 100; /* Priorité d'affichage absolute */
+  max-height: 200px;
   overflow-y: auto;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
 }
 
-.loading-text {
-  padding: 15px;
-  color: var(--text-muted);
-  text-align: center;
+.col-search-dropdown li {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  color: #ccc;
+  cursor: pointer;
+  border-bottom: 1px solid #2a2a2a;
+  transition: background 0.2s ease;
 }
 
-.results-grid {
+.col-search-dropdown li:hover {
+  background: #0052cc;
+  color: #fff;
+}
+
+/* Listes d'éléments déjà ajoutés */
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 0.5rem;
 }
 
-.result-card {
+.item-list li {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.result-card:hover {
-  background: var(--bg-input);
-}
-
-.result-card img {
-  width: 60px;
-  height: 40px;
-  object-fit: cover;
+  background: #222;
+  padding: 0.6rem;
   border-radius: 4px;
-  margin-right: 15px;
-}
-
-.result-info {
-  flex: 1;
-}
-
-.result-info h4 {
-  margin: 0 0 4px 0;
-  font-size: 1rem;
-}
-
-.result-info p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-}
-
-.btn-quick-add {
-  background: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  font-size: 0.8rem;
-  padding: 6px 12px;
-}
-
-.btn-quick-add:hover {
-  background: var(--accent);
-  color: var(--bg-main);
+  font-size: 0.85rem;
+  border-left: 3px solid #00875a;
 }

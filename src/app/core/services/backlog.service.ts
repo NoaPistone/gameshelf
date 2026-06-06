@@ -106,4 +106,27 @@ export class BacklogService {
   updateMonthData(monthKey: string, data: CalendarMonthData) { 
     this.calendarData.update(current => ({ ...current, [monthKey]: data })); 
   }
+  // Récupérer les détails complets d'un jeu pour la vue Steam (Description, éditeurs, etc.)
+  async getGameDetails(id: number | string): Promise<any> {
+    try {
+      const url = `${this.baseUrl}/games/${id}?key=${this.apiKey}`;
+      return await firstValueFrom(this.http.get(url));
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails RAWG:', error);
+      return null;
+    }
+  }
+
+  // Recherche rapide simplifiée qui renvoie directement un tableau (pour les inputs du calendrier)
+  async searchGamesDirect(query: string): Promise<any[]> {
+    if (!query.trim()) return [];
+    try {
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${query}&page_size=5`;
+      const response: any = await firstValueFrom(this.http.get(url));
+      return response.results || [];
+    } catch (error) {
+      console.error('Erreur recherche directe:', error);
+      return [];
+    }
+  }
 }

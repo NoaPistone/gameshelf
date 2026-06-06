@@ -1,85 +1,218 @@
 <div class="home-container">
+  
+  <!-- Barre de recherche Principale -->
+  <div class="search-container">
+    <input 
+      type="text" 
+      placeholder="Rechercher un jeu dans le catalogue mondial (ex: Elden Ring, GTA)..." 
+      [ngModel]="searchQuery()" 
+      (ngModelChange)="searchQuery.set($event); onSearchChange()"
+      class="search-input"
+    />
+    <ul class="search-results-dropdown" *ngIf="searchResults().length > 0 && searchQuery().trim()">
+      <li *ngFor="let game of searchResults()" class="search-result-item" (click)="openGameDetails(game.id)">
+        <span class="game-clickable-title">🔍 {{ game.name }}</span>
+        <button class="quick-add-btn" (click)="$event.stopPropagation(); quickAddFromSearch(game.name)">+ Ajouter</button>
+      </li>
+    </ul>
+  </div>
 
-  <section class="search-section">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input 
-        type="text" 
-        placeholder="Rechercher un jeu dans le catalogue mondial (ex: Elden Ring, GTA)..." 
-        [ngModel]="searchQuery()" 
-        (ngModelChange)="searchQuery.set($event); onSearchChange()">
-    </div>
-
-    @if (searchQuery().length > 0) {
-      <div class="search-results-overlay">
-        @if (isSearching()) {
-          <div class="loading-text">🤖 Exploration des serveurs de jeu...</div>
-        }
-        
-        <div class="results-grid">
-          @for (game of searchResults(); track game.id) {
-            <div class="result-card" (click)="quickAddFromSearch(game.name)">
-              <img [src]="game.background_image || 'https://picsum.photos/80/50'" alt="cover">
-              <div class="result-info">
-                <h4>{{ game.name }}</h4>
-                <p>📅 Sortie : {{ game.released || 'Inconnue' }}</p>
-              </div>
-              <button class="btn-quick-add">🛒 Suivre ce mois-ci</button>
-            </div>
-          } @empty {
-            @if (!isSearching()) { <div class="loading-text">Aucun jeu trouvé.</div> }
-          }
+  <!-- Grille des Sorties -->
+  <section class="latest-section">
+    <h2>⚡ Sorties Récentes du Catalogue</h2>
+    <div class="games-grid">
+      <div *ngFor="let game of latestGames()" class="game-card" (click)="openGameDetails(game.id)">
+        <div class="card-image-wrapper">
+          <img [src]="game.background_image" [alt]="game.name" />
+        </div>
+        <div class="card-content">
+          <h3>{{ game.name }}</h3>
+          <p class="release-date">Sorti le : {{ game.released | date:'yyyy-MM-dd' }}</p>
         </div>
       </div>
-    }
-  </section>
-
-  <section class="news-section">
-    <h2><span class="text-glow">⚡</span> Sorties Récentes du Catalogue</h2>
-    <div class="news-grid">
-      @for (item of latestGames(); track item.id) {
-        <div class="news-card">
-          <img [src]="item.background_image" [alt]="item.name">
-          <div class="news-content">
-            <span class="news-date">Sorti le : {{ item.released }}</span>
-            <h3>{{ item.name }}</h3>
-            <p>⭐ Note : {{ item.rating }}/5 (basée sur {{ item.ratings_count }} avis)</p>
-          </div>
-        </div>
-      }
     </div>
   </section>
 
-  <hr class="separator">
+  <hr class="section-divider" />
 
+  <!-- SECTION CHRONOLOGIE -->
   <section class="calendar-section">
-    <h2><span class="text-glow">📅</span> Chronologie Personnelle</h2>
-    <div class="calendar-controls">
-      <button class="btn-nav" (click)="changeMonth(-1)">◀</button>
-      <div class="calendar-date-display">{{ months[currentMonth()] }} {{ currentYear() }}</div>
-      <button class="btn-nav" (click)="changeMonth(1)">▶</button>
+    <div class="calendar-header">
+      <h2>📅 Chronologie Personnelle</h2>
+      <div class="calendar-navigation">
+        <button (click)="changeMonth(-1)">◀</button>
+        <span class="current-date-label">{{ months[currentMonth()] }} {{ currentYear() }}</span>
+        <button (click)="changeMonth(1)">▶</button>
+      </div>
     </div>
+
     <div class="calendar-grid">
-      <div class="metric-card bought">
+      
+      <!-- COLONNE ACHETÉS -->
+      <div class="calendar-col">
         <h3>🛒 Achetés</h3>
-        <ul>@for (game of monthData().gamesBought; track $index) { <li>{{ game }} <button (click)="removeItem('gamesBought', $index)">×</button></li> }</ul>
-        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesBought')"><button (click)="addItem('gamesBought')">+</button></div>
+        <div class="input-group-container">
+          <div class="input-group">
+            <input 
+              type="text" 
+              placeholder="Chercher et ajouter..." 
+              [ngModel]="columnInputs.gamesBought()" 
+              (ngModelChange)="columnInputs.gamesBought.set($event); onColumnSearchChange('gamesBought')" 
+            />
+          </div>
+          <!-- Menu déroulant de la colonne -->
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesBought().length > 0 && columnInputs.gamesBought().trim()">
+            <li *ngFor="let game of columnResults.gamesBought()" (click)="addItemDirectly('gamesBought', game.name)">
+              {{ game.name }}
+            </li>
+          </ul>
+        </div>
+        <ul class="item-list">
+          <li *ngFor="let item of monthData().gamesBought; let i = index">
+            <span>{{ item }}</span>
+            <button class="delete-btn" (click)="removeItem('gamesBought', i)">×</button>
+          </li>
+        </ul>
       </div>
-      <div class="metric-card started">
+
+      <!-- COLONNE COMMENCÉS -->
+      <div class="calendar-col">
         <h3>🎮 Commencés</h3>
-        <ul>@for (game of monthData().gamesStarted; track $index) { <li>{{ game }} <button (click)="removeItem('gamesStarted', $index)">×</button></li> }</ul>
-        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesStarted')"><button (click)="addItem('gamesStarted')">+</button></div>
+        <div class="input-group-container">
+          <div class="input-group">
+            <input 
+              type="text" 
+              placeholder="Chercher et ajouter..." 
+              [ngModel]="columnInputs.gamesStarted()" 
+              (ngModelChange)="columnInputs.gamesStarted.set($event); onColumnSearchChange('gamesStarted')" 
+            />
+          </div>
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesStarted().length > 0 && columnInputs.gamesStarted().trim()">
+            <li *ngFor="let game of columnResults.gamesStarted()" (click)="addItemDirectly('gamesStarted', game.name)">
+              {{ game.name }}
+            </li>
+          </ul>
+        </div>
+        <ul class="item-list">
+          <li *ngFor="let item of monthData().gamesStarted; let i = index">
+            <span>{{ item }}</span>
+            <button class="delete-btn" (click)="removeItem('gamesStarted', i)">×</button>
+          </li>
+        </ul>
       </div>
-      <div class="metric-card finished">
+
+      <!-- COLONNE FINIS -->
+      <div class="calendar-col">
         <h3>🏆 Finis</h3>
-        <ul>@for (game of monthData().gamesFinished; track $index) { <li>{{ game }} <button (click)="removeItem('gamesFinished', $index)">×</button></li> }</ul>
-        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesFinished')"><button (click)="addItem('gamesFinished')">+</button></div>
+        <div class="input-group-container">
+          <div class="input-group">
+            <input 
+              type="text" 
+              placeholder="Chercher et ajouter..." 
+              [ngModel]="columnInputs.gamesFinished()" 
+              (ngModelChange)="columnInputs.gamesFinished.set($event); onColumnSearchChange('gamesFinished')" 
+            />
+          </div>
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesFinished().length > 0 && columnInputs.gamesFinished().trim()">
+            <li *ngFor="let game of columnResults.gamesFinished()" (click)="addItemDirectly('gamesFinished', game.name)">
+              {{ game.name }}
+            </li>
+          </ul>
+        </div>
+        <ul class="item-list">
+          <li *ngFor="let item of monthData().gamesFinished; let i = index">
+            <span>{{ item }}</span>
+            <button class="delete-btn" (click)="removeItem('gamesFinished', i)">×</button>
+          </li>
+        </ul>
       </div>
-      <div class="metric-card platinum">
+
+      <!-- COLONNE PLATINÉS -->
+      <div class="calendar-col">
         <h3>💎 Platinés (100%)</h3>
-        <ul>@for (game of monthData().gamesPlayed100; track $index) { <li>{{ game }} <button (click)="removeItem('gamesPlayed100', $index)">×</button></li> }</ul>
-        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesPlayed100')"><button (click)="addItem('gamesPlayed100')">+</button></div>
+        <div class="input-group-container">
+          <div class="input-group">
+            <input 
+              type="text" 
+              placeholder="Chercher et ajouter..." 
+              [ngModel]="columnInputs.gamesPlayed100()" 
+              (ngModelChange)="columnInputs.gamesPlayed100.set($event); onColumnSearchChange('gamesPlayed100')" 
+            />
+          </div>
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesPlayed100().length > 0 && columnInputs.gamesPlayed100().trim()">
+            <li *ngFor="let game of columnResults.gamesPlayed100()" (click)="addItemDirectly('gamesPlayed100', game.name)">
+              {{ game.name }}
+            </li>
+          </ul>
+        </div>
+        <ul class="item-list">
+          <li *ngFor="let item of monthData().gamesPlayed100; let i = index">
+            <span>{{ item }}</span>
+            <button class="delete-btn" (click)="removeItem('gamesPlayed100', i)">×</button>
+          </li>
+        </ul>
       </div>
+
     </div>
   </section>
+
+  <!-- MODALE COMPOSANT DETAIL JEU (STYLE STEAM) -->
+  <div class="steam-modal-overlay" *ngIf="selectedGameDetails()" (click)="closeModal()">
+    <div class="steam-modal-card" (click)="$event.stopPropagation()">
+      <button class="steam-close-btn" (click)="closeModal()">×</button>
+      
+      <div class="steam-header">
+        <h1 class="steam-title">{{ selectedGameDetails().name }}</h1>
+      </div>
+
+      <div class="steam-body">
+        <!-- Colonne Gauche : Image Principale -->
+        <div class="steam-media-col">
+          <img [src]="selectedGameDetails().background_image" class="steam-main-img" />
+        </div>
+
+        <!-- Colonne Droite : Infos courtes type Steam -->
+        <div class="steam-info-col">
+          <img [src]="selectedGameDetails().background_image_additional || selectedGameDetails().background_image" class="steam-mini-banner" />
+          <div class="steam-description" [innerHTML]="selectedGameDetails().description | slice:0:350"></div>...
+          
+          <div class="steam-meta-grid">
+            <div class="meta-label">DATE DE PARUTION :</div>
+            <div class="meta-value">{{ selectedGameDetails().released | date:'d MMM yyyy' }}</div>
+
+            <div class="meta-label">DÉVELOPPEUR :</div>
+            <div class="meta-value">
+              <span *ngFor="let dev of selectedGameDetails().developers">{{ dev.name }} </span>
+            </div>
+
+            <div class="meta-label">ÉDITEUR :</div>
+            <div class="meta-value">
+              <span *ngFor="let pub of selectedGameDetails().publishers">{{ pub.name }} </span>
+            </div>
+          </div>
+
+          <!-- COMPTEUR HOW LONG TO BEAT (HLTB) -->
+          <div class="hltb-container">
+            <h4>⏱ Durée de vie (HowLongToBeat)</h4>
+            <div class="hltb-grid">
+              <div class="hltb-box">
+                <span class="hltb-hours">{{ selectedGameDetails().hltb?.main }}h</span>
+                <span class="hltb-label">Main Story</span>
+              </div>
+              <div class="hltb-box">
+                <span class="hltb-hours">{{ selectedGameDetails().hltb?.extra }}h</span>
+                <span class="hltb-label">Main + Extra</span>
+              </div>
+              <div class="hltb-box">
+                <span class="hltb-hours">{{ selectedGameDetails().hltb?.completionist }}h</span>
+                <span class="hltb-label">Completionist</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
