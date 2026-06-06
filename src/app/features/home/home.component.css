@@ -1,4 +1,141 @@
-/* --- SECTION CHRONOLOGIE (STABLE) --- */
+/* --- BARRE DE RECHERCHE PRINCIPALE STEAM --- */
+.search-container {
+  position: relative;
+  max-width: 800px;
+  margin: 2rem auto;
+  z-index: 1000;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.8rem 1.2rem;
+  background: #202d39;
+  border: 1px solid #1b2838;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 1rem;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+  transition: border-color 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #66c0f4;
+}
+
+.search-results-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #3d4450;
+  border-radius: 0 0 4px 4px;
+  margin: 2px 0 0 0;
+  padding: 0.5rem;
+  list-style: none;
+  max-height: 450px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-radius: 2px;
+}
+
+.search-result-item:hover {
+  background: #171a21;
+}
+
+.search-result-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.search-result-thumb {
+  width: 120px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.game-clickable-title {
+  color: #c6d4df;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.search-result-price {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.3rem 0.6rem;
+  color: #beee11;
+  font-family: monospace;
+  font-size: 0.9rem;
+  border-radius: 2px;
+}
+
+/* --- SECTION SORTIES RÉCENTES --- */
+.latest-section {
+  margin-bottom: 3rem;
+}
+
+.latest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.game-card {
+  background: #1b2838;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.game-card:hover {
+  transform: translateY(-4px);
+  border-color: #66c0f4;
+}
+
+.game-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+.game-card-info {
+  padding: 1rem;
+}
+
+.game-card-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-card-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #8f98a0;
+}
+
+/* --- SECTION CHRONOLOGIE (STABLE & NETTOYÉE) --- */
 .calendar-section {
   margin-top: 2rem;
 }
@@ -10,14 +147,32 @@
   margin-bottom: 2rem;
 }
 
+.month-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.month-selector button {
+  background: #2a475e;
+  border: none;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.month-selector button:hover {
+  background: #66c0f4;
+}
+
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Force l'affichage en 4 colonnes équitables */
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   align-items: start;
 }
 
-/* Encapsulation de chaque colonne */
 .calendar-col {
   background-color: #161616;
   border-radius: 8px;
@@ -34,9 +189,9 @@
   font-size: 1.05rem;
   border-bottom: 2px solid #2a2a2a;
   padding-bottom: 0.5rem;
+  color: #fff;
 }
 
-/* Le conteneur de l'input doit être en position relative pour bloquer la liste déroulante */
 .input-group-container {
   position: relative;
   width: 100%;
@@ -54,7 +209,6 @@
   box-sizing: border-box;
 }
 
-/* LISTE FLOTTANTE PAR COLONNE : Elle flotte au-dessus sans casser le reste */
 .col-search-dropdown {
   position: absolute;
   top: 100%;
@@ -66,7 +220,7 @@
   padding: 0;
   margin: 4px 0 0 0;
   list-style: none;
-  z-index: 100; /* Priorité d'affichage absolute */
+  z-index: 100;
   max-height: 200px;
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
@@ -78,7 +232,6 @@
   color: #ccc;
   cursor: pointer;
   border-bottom: 1px solid #2a2a2a;
-  transition: background 0.2s ease;
 }
 
 .col-search-dropdown li:hover {
@@ -86,7 +239,6 @@
   color: #fff;
 }
 
-/* Listes d'éléments déjà ajoutés */
 .item-list {
   list-style: none;
   padding: 0;
@@ -105,4 +257,14 @@
   border-radius: 4px;
   font-size: 0.85rem;
   border-left: 3px solid #00875a;
+  color: #fff;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #ff4d4d;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 0.3rem;
 }

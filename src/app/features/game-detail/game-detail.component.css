@@ -14,11 +14,33 @@
   font-size: 0.9rem;
 }
 
+.steam-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
 .steam-title {
   color: #fff;
   font-size: 2.2rem;
   font-weight: 300;
-  margin: 0 0 1.5rem 0;
+  margin: 0;
+}
+
+.steam-external-link {
+  background: #a34c13;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.steam-external-link:hover {
+  background: #c25a18;
 }
 
 .steam-layout {
@@ -78,5 +100,67 @@
   border-radius: 4px;
   border: 1px solid #233c51;
 }
-.hltb-notice h4 { margin: 0 0 0.25rem 0; color: #fff; }
-.hltb-notice p { margin: 0; font-size: 0.75rem; color: #8f98a0; }
+
+.hltb-notice h4 { margin: 0 0 0.5rem 0; color: #fff; }
+.hltb-notice p { margin: 0 0 0.25rem 0; font-size: 0.8rem; color: #8f98a0; }
+
+/* Section Comparateur de Clés */
+.keys-comparison-section {
+  margin-top: 3rem;
+  background: rgba(20, 24, 32, 0.95);
+  padding: 1.5rem;
+  border-radius: 6px;
+  border: 1px solid #233c51;
+}
+
+.keys-comparison-section h2 {
+  color: #fff;
+  font-size: 1.3rem;
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.keys-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.key-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  padding: 0.8rem 1rem;
+  background: #1b2838;
+  align-items: center;
+  border-radius: 4px;
+  border-left: 4px solid #66c0f4;
+}
+
+.key-row.header-row {
+  background: #101822;
+  font-weight: bold;
+  color: #8f98a0;
+  border-left: 4px solid transparent;
+}
+
+.store-name { color: #fff; font-weight: 500; }
+.store-price { color: #beee11; font-weight: bold; font-size: 1.1rem; }
+
+.buy-key-btn {
+  background: #475a1d;
+  color: #beee11;
+  padding: 0.4rem 0.8rem;
+  border-radius: 3px;
+  text-decoration: none;
+  font-size: 0.85rem;
+  display: inline-block;
+  transition: background 0.2s;
+}
+
+.buy-key-btn:hover {
+  background: #5c7526;
+  color: #fff;
+}
+
+.no-keys-text { color: #8f98a0; font-style: italic; }
+.loader-text { color: #fff; text-align: center; margin-top: 5rem; }

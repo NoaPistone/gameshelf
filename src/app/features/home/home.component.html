@@ -1,67 +1,62 @@
-<div class="home-container">
+<div class="search-container">
+  <input 
+    type="text" 
+    placeholder="Rechercher un jeu dans le catalogue mondial (ex: Elden Ring, GTA)..." 
+    [ngModel]="searchQuery()" 
+    (ngModelChange)="searchQuery.set($event); onSearchChange()"
+    class="search-input"
+  />
   
-  <!-- Barre de recherche Principale -->
-  <div class="search-container">
-    <input 
-      type="text" 
-      placeholder="Rechercher un jeu dans le catalogue mondial (ex: Elden Ring, GTA)..." 
-      [ngModel]="searchQuery()" 
-      (ngModelChange)="searchQuery.set($event); onSearchChange()"
-      class="search-input"
-    />
-    <ul class="search-results-dropdown" *ngIf="searchResults().length > 0 && searchQuery().trim()">
-      <li *ngFor="let game of searchResults()" class="search-result-item" (click)="openGameDetails(game.id)">
-        <span class="game-clickable-title">🔍 {{ game.name }}</span>
-        <button class="quick-add-btn" (click)="$event.stopPropagation(); quickAddFromSearch(game.name)">+ Ajouter</button>
-      </li>
-    </ul>
-  </div>
+  <ul class="search-results-dropdown" *ngIf="searchResults().length > 0 && searchQuery().trim()">
+    <li *ngFor="let game of searchResults()" class="search-result-item" (click)="openGameDetails(game.slug)">
+      <div class="search-result-left">
+        <img [src]="game.background_image" class="search-result-thumb" alt="Miniature" />
+        <span class="game-clickable-title">{{ game.name }}</span>
+      </div>
+      <div class="search-result-price">
+        {{ game.id % 2 === 0 ? '49,99€' : 'Gratuit' }}
+      </div>
+    </li>
+  </ul>
+</div>
 
-  <!-- Grille des Sorties -->
+<div class="dashboard-content">
   <section class="latest-section">
-    <h2>⚡ Sorties Récentes du Catalogue</h2>
-    <div class="games-grid">
-      <div *ngFor="let game of latestGames()" class="game-card" (click)="openGameDetails(game.id)">
-        <div class="card-image-wrapper">
-          <img [src]="game.background_image" [alt]="game.name" />
-        </div>
-        <div class="card-content">
+    <h2>⚡ Sorties Récents du Catalogue</h2>
+    <div class="latest-grid">
+      <div *ngFor="let game of latestGames()" class="game-card" (click)="openGameDetails(game.slug)">
+        <img [src]="game.background_image" [alt]="game.name" />
+        <div class="game-card-info">
           <h3>{{ game.name }}</h3>
-          <p class="release-date">Sorti le : {{ game.released | date:'yyyy-MM-dd' }}</p>
+          <p>Sorti le : {{ game.released | date:'yyyy-MM-dd' }}</p>
         </div>
       </div>
     </div>
   </section>
 
-  <hr class="section-divider" />
-
-  <!-- SECTION CHRONOLOGIE -->
   <section class="calendar-section">
     <div class="calendar-header">
       <h2>📅 Chronologie Personnelle</h2>
-      <div class="calendar-navigation">
+      <div class="month-selector">
         <button (click)="changeMonth(-1)">◀</button>
-        <span class="current-date-label">{{ months[currentMonth()] }} {{ currentYear() }}</span>
+        <span>{{ months[currentMonth()] }} {{ currentYear() }}</span>
         <button (click)="changeMonth(1)">▶</button>
       </div>
     </div>
 
     <div class="calendar-grid">
-      
-      <!-- COLONNE ACHETÉS -->
       <div class="calendar-col">
         <h3>🛒 Achetés</h3>
         <div class="input-group-container">
           <div class="input-group">
             <input 
               type="text" 
-              placeholder="Chercher et ajouter..." 
-              [ngModel]="columnInputs.gamesBought()" 
-              (ngModelChange)="columnInputs.gamesBought.set($event); onColumnSearchChange('gamesBought')" 
+              placeholder="Ajouter..." 
+              [ngModel]="columnInputs.gamesBought()"
+              (ngModelChange)="columnInputs.gamesBought.set($event); onColumnSearchChange('gamesBought')"
             />
           </div>
-          <!-- Menu déroulant de la colonne -->
-          <ul class="col-search-dropdown" *ngIf="columnResults.gamesBought().length > 0 && columnInputs.gamesBought().trim()">
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesBought().length > 0">
             <li *ngFor="let game of columnResults.gamesBought()" (click)="addItemDirectly('gamesBought', game.name)">
               {{ game.name }}
             </li>
@@ -75,19 +70,18 @@
         </ul>
       </div>
 
-      <!-- COLONNE COMMENCÉS -->
       <div class="calendar-col">
         <h3>🎮 Commencés</h3>
         <div class="input-group-container">
           <div class="input-group">
             <input 
               type="text" 
-              placeholder="Chercher et ajouter..." 
-              [ngModel]="columnInputs.gamesStarted()" 
-              (ngModelChange)="columnInputs.gamesStarted.set($event); onColumnSearchChange('gamesStarted')" 
+              placeholder="Ajouter..." 
+              [ngModel]="columnInputs.gamesStarted()"
+              (ngModelChange)="columnInputs.gamesStarted.set($event); onColumnSearchChange('gamesStarted')"
             />
           </div>
-          <ul class="col-search-dropdown" *ngIf="columnResults.gamesStarted().length > 0 && columnInputs.gamesStarted().trim()">
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesStarted().length > 0">
             <li *ngFor="let game of columnResults.gamesStarted()" (click)="addItemDirectly('gamesStarted', game.name)">
               {{ game.name }}
             </li>
@@ -101,19 +95,18 @@
         </ul>
       </div>
 
-      <!-- COLONNE FINIS -->
       <div class="calendar-col">
         <h3>🏆 Finis</h3>
         <div class="input-group-container">
           <div class="input-group">
             <input 
               type="text" 
-              placeholder="Chercher et ajouter..." 
-              [ngModel]="columnInputs.gamesFinished()" 
-              (ngModelChange)="columnInputs.gamesFinished.set($event); onColumnSearchChange('gamesFinished')" 
+              placeholder="Ajouter..." 
+              [ngModel]="columnInputs.gamesFinished()"
+              (ngModelChange)="columnInputs.gamesFinished.set($event); onColumnSearchChange('gamesFinished')"
             />
           </div>
-          <ul class="col-search-dropdown" *ngIf="columnResults.gamesFinished().length > 0 && columnInputs.gamesFinished().trim()">
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesFinished().length > 0">
             <li *ngFor="let game of columnResults.gamesFinished()" (click)="addItemDirectly('gamesFinished', game.name)">
               {{ game.name }}
             </li>
@@ -127,19 +120,18 @@
         </ul>
       </div>
 
-      <!-- COLONNE PLATINÉS -->
       <div class="calendar-col">
         <h3>💎 Platinés (100%)</h3>
         <div class="input-group-container">
           <div class="input-group">
             <input 
               type="text" 
-              placeholder="Chercher et ajouter..." 
-              [ngModel]="columnInputs.gamesPlayed100()" 
-              (ngModelChange)="columnInputs.gamesPlayed100.set($event); onColumnSearchChange('gamesPlayed100')" 
+              placeholder="Ajouter..." 
+              [ngModel]="columnInputs.gamesPlayed100()"
+              (ngModelChange)="columnInputs.gamesPlayed100.set($event); onColumnSearchChange('gamesPlayed100')"
             />
           </div>
-          <ul class="col-search-dropdown" *ngIf="columnResults.gamesPlayed100().length > 0 && columnInputs.gamesPlayed100().trim()">
+          <ul class="col-search-dropdown" *ngIf="columnResults.gamesPlayed100().length > 0">
             <li *ngFor="let game of columnResults.gamesPlayed100()" (click)="addItemDirectly('gamesPlayed100', game.name)">
               {{ game.name }}
             </li>
@@ -155,64 +147,4 @@
 
     </div>
   </section>
-
-  <!-- MODALE COMPOSANT DETAIL JEU (STYLE STEAM) -->
-  <div class="steam-modal-overlay" *ngIf="selectedGameDetails()" (click)="closeModal()">
-    <div class="steam-modal-card" (click)="$event.stopPropagation()">
-      <button class="steam-close-btn" (click)="closeModal()">×</button>
-      
-      <div class="steam-header">
-        <h1 class="steam-title">{{ selectedGameDetails().name }}</h1>
-      </div>
-
-      <div class="steam-body">
-        <!-- Colonne Gauche : Image Principale -->
-        <div class="steam-media-col">
-          <img [src]="selectedGameDetails().background_image" class="steam-main-img" />
-        </div>
-
-        <!-- Colonne Droite : Infos courtes type Steam -->
-        <div class="steam-info-col">
-          <img [src]="selectedGameDetails().background_image_additional || selectedGameDetails().background_image" class="steam-mini-banner" />
-          <div class="steam-description" [innerHTML]="selectedGameDetails().description | slice:0:350"></div>...
-          
-          <div class="steam-meta-grid">
-            <div class="meta-label">DATE DE PARUTION :</div>
-            <div class="meta-value">{{ selectedGameDetails().released | date:'d MMM yyyy' }}</div>
-
-            <div class="meta-label">DÉVELOPPEUR :</div>
-            <div class="meta-value">
-              <span *ngFor="let dev of selectedGameDetails().developers">{{ dev.name }} </span>
-            </div>
-
-            <div class="meta-label">ÉDITEUR :</div>
-            <div class="meta-value">
-              <span *ngFor="let pub of selectedGameDetails().publishers">{{ pub.name }} </span>
-            </div>
-          </div>
-
-          <!-- COMPTEUR HOW LONG TO BEAT (HLTB) -->
-          <div class="hltb-container">
-            <h4>⏱ Durée de vie (HowLongToBeat)</h4>
-            <div class="hltb-grid">
-              <div class="hltb-box">
-                <span class="hltb-hours">{{ selectedGameDetails().hltb?.main }}h</span>
-                <span class="hltb-label">Main Story</span>
-              </div>
-              <div class="hltb-box">
-                <span class="hltb-hours">{{ selectedGameDetails().hltb?.extra }}h</span>
-                <span class="hltb-label">Main + Extra</span>
-              </div>
-              <div class="hltb-box">
-                <span class="hltb-hours">{{ selectedGameDetails().hltb?.completionist }}h</span>
-                <span class="hltb-label">Completionist</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>

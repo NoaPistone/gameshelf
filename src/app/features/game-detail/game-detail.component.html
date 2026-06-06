@@ -1,15 +1,20 @@
 <div class="steam-page-container" *ngIf="!loading() && game(); else loader">
-  <a routerLink="/" class="back-btn">◀ Retour à l'accueil</a>
+  <a routerLink="/" class="back-btn">◀ Retour au tableau de bord</a>
 
-  <h1 class="steam-title">{{ game().name }}</h1>
+  <div class="steam-header-row">
+    <h1 class="steam-title">{{ game().name }}</h1>
+    <a [href]="'https://store.steampowered.com/search/?term=' + game().name" target="_blank" class="steam-external-link">
+      ➔ Voir la page Steam Officielle
+    </a>
+  </div>
 
   <div class="steam-layout">
     <div class="steam-media">
-      <img [src]="game().background_image" class="main-img" />
+      <img [src]="game().background_image" class="main-img" alt="Background" />
     </div>
 
     <div class="steam-sidebar">
-      <img [src]="game().background_image_additional || game().background_image" class="mini-banner" />
+      <img [src]="game().background_image_additional || game().background_image" class="mini-banner" alt="Banner" />
       <div class="description" [innerHTML]="game().description"></div>
       
       <div class="meta-grid">
@@ -21,14 +26,42 @@
         <div class="val"><span *ngFor="let p of game().publishers">{{ p.name }} </span></div>
       </div>
 
-      <div class="hltb-notice">
-        <h4>⏱ Données de jeu (HLTB)</h4>
-        <p>Les données réelles requièrent un serveur d'API scraping dédié.</p>
+      <div class="hltb-notice" *ngIf="game().hltb">
+        <h4>⏱ Durée de vie estimée (HLTB)</h4>
+        <p>Histoire Principale : <strong>{{ game().hltb.main }}h</strong></p>
+        <p>Histoire + Extras : <strong>{{ game().hltb.extra }}h</strong></p>
+        <p>Complétiste (100%) : <strong>{{ game().hltb.completionist }}h</strong></p>
       </div>
     </div>
+  </div>
+
+  <div class="keys-comparison-section">
+    <h2>🔑 Meilleures offres de clés & stores (Trié par prix croissant)</h2>
+    
+    <div class="keys-grid" *ngIf="keyStores().length > 0; else noKeys">
+      <div class="key-row header-row">
+        <div>Boutique / Revendeur</div>
+        <div>Prix Économique</div>
+        <div>Lien d'achat</div>
+      </div>
+      
+      <div class="key-row" *ngFor="let deal of keyStores()">
+        <div class="store-name">🛒 {{ getStoreName(deal.storeID) }}</div>
+        <div class="store-price">{{ deal.price }} $</div>
+        <div>
+          <a [href]="'https://www.cheapshark.com/redirect?dealID=' + deal.dealID" target="_blank" class="buy-key-btn">
+            Acheter la clé ➔
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #noKeys>
+      <p class="no-keys-text">Aucune offre de clé en ligne détectée pour ce jeu à l'heure actuelle.</p>
+    </ng-template>
   </div>
 </div>
 
 <ng-template #loader>
-  <div class="loader-text">Chargement des détails depuis le catalogue...</div>
+  <div class="loader-text">Récupération des données Steam & Prix des clés...</div>
 </ng-template>
