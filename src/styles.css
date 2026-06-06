@@ -1,1 +1,52 @@
-/* You can add global styles to this file, and also import other style files */
+/* Définition de la palette de gris moderne (KISS) */
+:root {
+  --bg-main: #121214;       /* Gris très sombre (Fond de page) */
+  --bg-card: #1c1c1f;       /* Gris intermédiaire (Cartes, blocs) */
+  --bg-input: #26262b;      /* Gris plus clair (Inputs, boutons secondaires) */
+  --border-color: #2d2d35;  /* Gris de délimitation discret */
+  
+  --text-main: #eeeeee;     /* Blanc cassé pour ne pas fatiguer les yeux */
+  --text-muted: #95a5a6;    /* Gris texte secondaire */
+  --accent: #00ffcc;        /* Une seule touche de couleur pour l'action */
+}
+
+/* Reset simple & Fond global */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Titres simplifiés (Règle le problème du texte blanc invisible) */
+h1, h2, h3, h4 {
+  color: var(--text-main);
+  font-weight: 600;
+  margin-top: 0;
+}
+
+/* Inputs & Boutons génériques */
+input, select, button {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  font-family: inherit;
+  border-radius: 4px;
+  padding: 8px 12px;
+  transition: all 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+button {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+button:hover {
+  background-color: var(--border-color);
+}

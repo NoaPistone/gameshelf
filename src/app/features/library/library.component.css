@@ -1,0 +1,126 @@
+.library-container {
+  padding: 30px 20px;
+}
+
+.import-section, .packs-section {
+  margin-bottom: 40px;
+}
+
+.dropzone-container {
+  display: flex;
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.dropzone {
+  flex: 1;
+  height: 110px;
+  border: 2px dashed var(--border-color);
+  background: var(--bg-card);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+}
+
+.dropzone.active {
+  border-color: var(--accent);
+  color: var(--text-main);
+}
+
+.table-responsive {
+  margin-top: 25px;
+}
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.styled-table th, .styled-table td {
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.styled-table th {
+  background-color: var(--bg-input);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.styled-table tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.packs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.packs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.pack-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.pack-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.count-badge {
+  background: var(--bg-input);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.pack-dropzone {
+  background: var(--bg-main);
+  border: 1px dashed var(--border-color);
+  padding: 15px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+.pack-dropzone.drag-over {
+  border-color: var(--accent);
+  color: var(--text-main);
+}
+
+.pack-games-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pack-game-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.pack-game-item:last-child {
+  border-bottom: none;
+}
