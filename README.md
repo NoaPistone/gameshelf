@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # GameShelf
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.14.
@@ -57,3 +58,6 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+=======
+# gameshelf
+>>>>>>> b99676b6446f5e5f723a13e71e4ca294a488b828
