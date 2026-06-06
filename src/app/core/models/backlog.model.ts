@@ -2,11 +2,11 @@ export interface Game {
   id: string;
   title: string;
   developer?: string;
-  publisher?: string;
-  hltbMain?: number;
-  hltbExtra?: number;
-  hltbCompletionist?: number;
-  status: 'À faire' | 'En cours' | 'En pause' | 'Abandonné' | 'Fini';
+  publisher?: string;      /* Ajouté pour la bibliothèque */
+  status: 'À faire' | 'En cours' | 'Fini' | 'Platiné';
+  hltbMain?: number;       /* Ajouté pour le temps de jeu */
+  hltbExtra?: number;      /* Ajouté pour le temps de jeu */
+  hltbCompletionist?: number; /* Ajouté pour le temps de jeu */
 }
 
 export interface GamePack {
@@ -16,17 +16,9 @@ export interface GamePack {
 }
 
 export interface CalendarMonthData {
-  monthKey: string; // Format 'YYYY-MM'
+  monthKey: string;
   gamesBought: string[];
   gamesStarted: string[];
   gamesFinished: string[];
   gamesPlayed100: string[];
-}
-
-export interface SteamNews {
-  id: string;
-  title: string;
-  date: string;
-  imageUrl: string;
-  summary: string;
 }

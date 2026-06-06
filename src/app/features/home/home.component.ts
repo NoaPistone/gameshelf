@@ -2,7 +2,6 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BacklogService } from '../../core/services/backlog.service';
-import { CalendarMonthData } from '../../core/models/backlog.model';
 
 @Component({
   selector: 'app-home',
@@ -12,61 +11,36 @@ import { CalendarMonthData } from '../../core/models/backlog.model';
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent {
-  private backlogService = inject(BacklogService);
+  public backlogService = inject(BacklogService);
   
-  public news = this.backlogService.steamNews;
-  
-  // Gestion de la date sélectionnée
+  // Utilisation directe des signaux du service réformé
+  public latestGames = this.backlogService.latestGames;
+  public searchResults = this.backlogService.searchResults;
+  public isSearching = this.backlogService.isSearching;
+
+  public searchQuery = signal<string>('');
+
   public currentYear = signal<number>(2026);
-  public currentMonth = signal<number>(5); // 0 = Janvier, 5 = Juin
+  public currentMonth = signal<number>(5);
+  public months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   
-  public months = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'
-  ];
-
-  // Génération de la clé YYYY-MM dynamique
-  public monthKey = computed(() => {
-    const m = (this.currentMonth() + 1).toString().padStart(2, '0');
-    return `${this.currentYear()}-${m}`;
-  });
-
-  // Récupération réactive des données du mois choisi
-  public monthData = computed(() => {
-    return this.backlogService.getOrCreateMonthData(this.monthKey());
-  });
-
-  // Inputs temporaires pour l'ajout rapide d'éléments textuels
+  public monthKey = computed(() => `${this.currentYear()}-${(this.currentMonth() + 1).toString().padStart(2, '0')}`);
+  public monthData = computed(() => this.backlogService.getOrCreateMonthData(this.monthKey()));
   public newItemName = signal<string>('');
 
-  changeMonth(delta: number) {
-    let nextMonth = this.currentMonth() + delta;
-    let nextYear = this.currentYear();
-
-    if (nextMonth > 11) {
-      nextMonth = 0;
-      nextYear++;
-    } else if (nextMonth < 0) {
-      nextMonth = 11;
-      nextYear--;
-    }
-    this.currentMonth.set(nextMonth);
-    this.currentYear.set(nextYear);
+  onSearchChange() {
+    this.backlogService.searchGames(this.searchQuery());
   }
 
-  addItem(category: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100') {
-    if (!this.newItemName().trim()) return;
-
+  quickAddFromSearch(gameTitle: string) {
     const currentData = { ...this.monthData() };
-    currentData[category] = [...currentData[category], this.newItemName().trim()];
-    
+    currentData.gamesBought = [...currentData.gamesBought, gameTitle];
     this.backlogService.updateMonthData(this.monthKey(), currentData);
-    this.newItemName.set('');
+    this.searchQuery.set('');
+    this.backlogService.searchGames('');
   }
 
-  removeItem(category: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100', index: number) {
-    const currentData = { ...this.monthData() };
-    currentData[category] = currentData[category].filter((_, i) => i !== index);
-    this.backlogService.updateMonthData(this.monthKey(), currentData);
-  }
+  changeMonth(delta: number) { let nm = this.currentMonth() + delta; let ny = this.currentYear(); if (nm > 11) { nm = 0; ny++; } else if (nm < 0) { nm = 11; ny--; } this.currentMonth.set(nm); this.currentYear.set(ny); }
+  addItem(cat: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100') { if (!this.newItemName().trim()) return; const d = { ...this.monthData() }; d[cat] = [...d[cat], this.newItemName().trim()]; this.backlogService.updateMonthData(this.monthKey(), d); this.newItemName.set(''); }
+  removeItem(cat: 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100', i: number) { const d = { ...this.monthData() }; d[cat] = d[cat].filter((_: any, idx: number) => idx !== i); this.backlogService.updateMonthData(this.monthKey(), d); }
 }

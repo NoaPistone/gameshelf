@@ -1,14 +1,49 @@
 <div class="home-container">
+
+  <section class="search-section">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input 
+        type="text" 
+        placeholder="Rechercher un jeu dans le catalogue mondial (ex: Elden Ring, GTA)..." 
+        [ngModel]="searchQuery()" 
+        (ngModelChange)="searchQuery.set($event); onSearchChange()">
+    </div>
+
+    @if (searchQuery().length > 0) {
+      <div class="search-results-overlay">
+        @if (isSearching()) {
+          <div class="loading-text">🤖 Exploration des serveurs de jeu...</div>
+        }
+        
+        <div class="results-grid">
+          @for (game of searchResults(); track game.id) {
+            <div class="result-card" (click)="quickAddFromSearch(game.name)">
+              <img [src]="game.background_image || 'https://picsum.photos/80/50'" alt="cover">
+              <div class="result-info">
+                <h4>{{ game.name }}</h4>
+                <p>📅 Sortie : {{ game.released || 'Inconnue' }}</p>
+              </div>
+              <button class="btn-quick-add">🛒 Suivre ce mois-ci</button>
+            </div>
+          } @empty {
+            @if (!isSearching()) { <div class="loading-text">Aucun jeu trouvé.</div> }
+          }
+        </div>
+      </div>
+    }
+  </section>
+
   <section class="news-section">
-    <h2><span class="text-glow">⚡</span> Dernières Actus Gaming</h2>
+    <h2><span class="text-glow">⚡</span> Sorties Récentes du Catalogue</h2>
     <div class="news-grid">
-      @for (item of news(); track item.id) {
+      @for (item of latestGames(); track item.id) {
         <div class="news-card">
-          <img [src]="item.imageUrl" [alt]="item.title">
+          <img [src]="item.background_image" [alt]="item.name">
           <div class="news-content">
-            <span class="news-date">{{ item.date }}</span>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.summary }}</p>
+            <span class="news-date">Sorti le : {{ item.released }}</span>
+            <h3>{{ item.name }}</h3>
+            <p>⭐ Note : {{ item.rating }}/5 (basée sur {{ item.ratings_count }} avis)</p>
           </div>
         </div>
       }
@@ -19,66 +54,31 @@
 
   <section class="calendar-section">
     <h2><span class="text-glow">📅</span> Chronologie Personnelle</h2>
-    
     <div class="calendar-controls">
       <button class="btn-nav" (click)="changeMonth(-1)">◀</button>
-      <div class="calendar-date-display">
-        {{ months[currentMonth()] }} {{ currentYear() }}
-      </div>
+      <div class="calendar-date-display">{{ months[currentMonth()] }} {{ currentYear() }}</div>
       <button class="btn-nav" (click)="changeMonth(1)">▶</button>
     </div>
-
     <div class="calendar-grid">
       <div class="metric-card bought">
         <h3>🛒 Achetés</h3>
-        <ul>
-          @for (game of monthData().gamesBought; track $index) {
-            <li>{{ game }} <button (click)="removeItem('gamesBought', $index)">×</button></li>
-          }
-        </ul>
-        <div class="add-input-group">
-          <input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesBought')">
-          <button (click)="addItem('gamesBought')">+</button>
-        </div>
+        <ul>@for (game of monthData().gamesBought; track $index) { <li>{{ game }} <button (click)="removeItem('gamesBought', $index)">×</button></li> }</ul>
+        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesBought')"><button (click)="addItem('gamesBought')">+</button></div>
       </div>
-
       <div class="metric-card started">
         <h3>🎮 Commencés</h3>
-        <ul>
-          @for (game of monthData().gamesStarted; track $index) {
-            <li>{{ game }} <button (click)="removeItem('gamesStarted', $index)">×</button></li>
-          }
-        </ul>
-        <div class="add-input-group">
-          <input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesStarted')">
-          <button (click)="addItem('gamesStarted')">+</button>
-        </div>
+        <ul>@for (game of monthData().gamesStarted; track $index) { <li>{{ game }} <button (click)="removeItem('gamesStarted', $index)">×</button></li> }</ul>
+        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesStarted')"><button (click)="addItem('gamesStarted')">+</button></div>
       </div>
-
       <div class="metric-card finished">
         <h3>🏆 Finis</h3>
-        <ul>
-          @for (game of monthData().gamesFinished; track $index) {
-            <li>{{ game }} <button (click)="removeItem('gamesFinished', $index)">×</button></li>
-          }
-        </ul>
-        <div class="add-input-group">
-          <input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesFinished')">
-          <button (click)="addItem('gamesFinished')">+</button>
-        </div>
+        <ul>@for (game of monthData().gamesFinished; track $index) { <li>{{ game }} <button (click)="removeItem('gamesFinished', $index)">×</button></li> }</ul>
+        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesFinished')"><button (click)="addItem('gamesFinished')">+</button></div>
       </div>
-
       <div class="metric-card platinum">
         <h3>💎 Platinés (100%)</h3>
-        <ul>
-          @for (game of monthData().gamesPlayed100; track $index) {
-            <li>{{ game }} <button (click)="removeItem('gamesPlayed100', $index)">×</button></li>
-          }
-        </ul>
-        <div class="add-input-group">
-          <input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesPlayed100')">
-          <button (click)="addItem('gamesPlayed100')">+</button>
-        </div>
+        <ul>@for (game of monthData().gamesPlayed100; track $index) { <li>{{ game }} <button (click)="removeItem('gamesPlayed100', $index)">×</button></li> }</ul>
+        <div class="add-input-group"><input type="text" placeholder="Ajouter..." [(ngModel)]="newItemName" (keyup.enter)="addItem('gamesPlayed100')"><button (click)="addItem('gamesPlayed100')">+</button></div>
       </div>
     </div>
   </section>

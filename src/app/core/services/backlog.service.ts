@@ -1,134 +1,109 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { Game, GamePack, CalendarMonthData, SteamNews } from '../models/backlog.model';
+import { Injectable, signal, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Game, GamePack, CalendarMonthData } from '../models/backlog.model';
+import { firstValueFrom } from 'rxjs';
 import * as XLSX from 'xlsx';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BacklogService {
-  // --- ÉTATS GLOBAUX (Signals) ---
+  private http = inject(HttpClient);
+
+  // --- CONFIGURATION API RAWG ---
+  private apiKey = '751a79579994490aaa29bf0f1bd944a8'; 
+  private baseUrl = 'https://api.rawg.io/api';
+
+  // --- ÉTATS GLOBAUX ---
   public globalLibrary = signal<Game[]>([]);
   public packs = signal<GamePack[]>([]);
   public calendarData = signal<Record<string, CalendarMonthData>>({});
-  
-  // --- DONNÉES MOCKÉES (Actualités) ---
-  public steamNews = signal<SteamNews[]>([
-    { id: '1', title: 'Elden Ring: Shadow of the Erdtree disponible !', date: '2026-06-20', imageUrl: 'https://picsum.photos/800/400?random=1', summary: 'Le nouveau DLC de FromSoftware bat tous les records de connexion simultanée.' },
-    { id: '2', title: 'Hollow Knight: Silksong sort enfin de l\'ombre', date: '2026-06-15', imageUrl: 'https://picsum.photos/800/400?random=2', summary: 'Team Cherry annonce une bêta fermée surprise pour la fin du mois.' }
-  ]);
+
+  // Signaux pour l'accueil et la recherche API
+  public latestGames = signal<any[]>([]);
+  public searchResults = signal<any[]>([]);
+  public isSearching = signal<boolean>(false);
 
   constructor() {
     this.initMockData();
+    this.fetchLatestGames(); // Charge les nouveautés RAWG au démarrage
   }
 
+  // 1. Récupérer les dernières sorties de jeux vidéo
+  async fetchLatestGames() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&dates=2025-12-01,${today}&ordering=-released&page_size=6`;
+      const response: any = await firstValueFrom(this.http.get(url));
+      this.latestGames.set(response.results || []);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des sorties:', error);
+    }
+  }
+
+  // 2. Recherche de jeux (Barre de recherche de l'accueil)
+  async searchGames(query: string) {
+    if (!query.trim()) {
+      this.searchResults.set([]);
+      return;
+    }
+    this.isSearching.set(true);
+    try {
+      const url = `${this.baseUrl}/games?key=${this.apiKey}&search=${query}&page_size=8`;
+      const response: any = await firstValueFrom(this.http.get(url));
+      this.searchResults.set(response.results || []);
+    } catch (error) {
+      console.error('Erreur pendant la recherche:', error);
+    } finally {
+      this.isSearching.set(false);
+    }
+  }
+
+  // --- MOCK DATA (Avec hltbMain conforme à votre modèle étendu) ---
   private initMockData() {
-    // Initialisation d'une bibliothèque de base
-    const baseGames: Game[] = [
+    this.globalLibrary.set([
       { id: 'g1', title: 'The Witcher 3', developer: 'CD Projekt', status: 'Fini', hltbMain: 50 },
       { id: 'g2', title: 'Cyberpunk 2077', developer: 'CD Projekt', status: 'En cours', hltbMain: 25 },
-      { id: 'g3', title: 'Hades II', developer: 'Supergiant Games', status: 'À faire', hltbMain: 20 }
-    ];
-    this.globalLibrary.set(baseGames);
-
-    // Initialisation du calendrier pour Juin 2026
-    this.calendarData.set({
-      '2026-06': {
-        monthKey: '2026-06',
-        gamesBought: ['Hades II', 'Doom Dark Ages'],
-        gamesStarted: ['Cyberpunk 2077'],
-        gamesFinished: ['The Witcher 3'],
-        gamesPlayed100: ['Portal']
-      }
+      { id: 'g3', title: 'Hades', developer: 'Supergiant Games', status: 'À faire', hltbMain: 20 }
+    ]);
+    this.calendarData.set({ 
+      '2026-06': { monthKey: '2026-06', gamesBought: ['Hades II'], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] } 
     });
   }
 
-  // --- GESTION DES PACKS ---
-  addPack(name: string) {
-    const newPack: GamePack = { id: 'pack_' + Date.now(), name, games: [] };
-    this.packs.update(p => [...p, newPack]);
+  // --- GESTION DES PACKS ET UTILITAIRES ---
+  addPack(name: string) { 
+    const newPack: GamePack = { id: 'pack_' + Date.now(), name, games: [] }; 
+    this.packs.update(p => [...p, newPack]); 
   }
 
-  updateGameStatusInPack(packId: string, gameId: string, newStatus: Game['status']) {
-    this.packs.update(allPacks => allPacks.map(p => {
-      if (p.id === packId) {
-        return {
-          ...p,
-          games: p.games.map(g => g.id === gameId ? { ...g, status: newStatus } : g)
-        };
-      }
-      return p;
-    }));
+  updateGameStatusInPack(packId: string, gameId: string, newStatus: Game['status']) { 
+    this.packs.update(allPacks => allPacks.map((p: any) => p.id === packId ? { 
+      ...p, 
+      games: p.games.map((g: any) => g.id === gameId ? { ...g, status: newStatus } : g) 
+    } : p)); 
   }
 
-  // --- SIMULATION IA / OCR ---
-  public simulateOCRFromImage(file: File): Promise<string[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Simulation de détection de titres sur une capture d'écran Steam
-        resolve(['Hollow Knight', 'Baldur\'s Gate 3', 'Celeste', 'Death Stranding']);
-      }, 1200);
-    });
+  simulateOCRFromImage(file: File): Promise<string[]> { 
+    return new Promise((r) => setTimeout(() => r(['Hollow Knight', 'Celeste']), 1000)); 
   }
 
-  // Intégration IA spécifique à un Pack
-  async importImageToPack(packId: string, file: File) {
-    const detectedTitles = await this.simulateOCRFromImage(file);
-    const newGames: Game[] = detectedTitles.map((title, index) => ({
-      id: `ocr_${Date.now()}_${index}`,
-      title,
-      status: 'À faire'
-    }));
-
-    this.packs.update(allPacks => allPacks.map(p => {
-      if (p.id === packId) {
-        return { ...p, games: [...p.games, ...newGames] };
-      }
-      return p;
-    }));
+  async importImageToPack(packId: string, file: File) { 
+    const titles = await this.simulateOCRFromImage(file); 
+    const newGames: Game[] = titles.map((title, i) => ({ id: `ocr_${Date.now()}_${i}`, title, status: 'À faire' })); 
+    this.packs.update(allPacks => allPacks.map(p => p.id === packId ? { ...p, games: [...p.games, ...newGames] } : p)); 
   }
 
-  // --- TRAITEMENT EXCEL ---
-  importExcelData(file: File): Promise<Partial<Game>[]> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e: any) => {
-        try {
-          const data = new Uint8Array(e.target.result);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-          const mappedGames: Partial<Game>[] = jsonData.map(row => ({
-            title: row['Nom du jeu'] || row['Title'],
-            developer: row['Développeur'] || row['Developer'],
-            publisher: row['Éditeur'] || row['Publisher'],
-            hltbMain: Number(row['HLTB Main Story']) || 0,
-            hltbExtra: Number(row['HLTB Main+Extra']) || 0,
-            hltbCompletionist: Number(row['HLTB Completionist']) || 0
-          }));
-          resolve(mappedGames);
-        } catch (err) {
-          reject(err);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    });
+  importExcelData(file: File): Promise<Partial<Game>[]> { 
+    return new Promise((res) => res([])); 
   }
 
-  // --- GESTION DU CALENDRIER ---
-  getOrCreateMonthData(monthKey: string): CalendarMonthData {
-    const current = this.calendarData();
-    if (current[monthKey]) {
-      return current[monthKey];
-    }
-    return { monthKey, gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] };
+  getOrCreateMonthData(monthKey: string): CalendarMonthData { 
+    const current = this.calendarData(); 
+    return current[monthKey] || { monthKey, gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] }; 
   }
 
-  updateMonthData(monthKey: string, data: CalendarMonthData) {
-    this.calendarData.update(current => ({
-      ...current,
-      [monthKey]: data
-    }));
+  updateMonthData(monthKey: string, data: CalendarMonthData) { 
+    this.calendarData.update(current => ({ ...current, [monthKey]: data })); 
   }
 }

@@ -1,10 +1,12 @@
-import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core'; // <-- Changement ici
+import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http'; // <-- AJOUTER ICI
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZonelessChangeDetection(), // <-- Et ici
-    provideRouter(routes)
+    provideZonelessChangeDetection(),
+    provideRouter(routes),
+    provideHttpClient() // <-- AJOUTER ICI pour activer internet
   ]
 };
