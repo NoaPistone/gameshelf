@@ -1,12 +1,16 @@
 export interface Game {
-  id: string;
-  title: string;
-  developer?: string;
-  publisher?: string;       /* Ajouté pour la bibliothèque */
-  status: 'À faire' | 'En cours' | 'Fini' | 'Platiné';
-  hltbMain?: number;        /* Ajouté pour le temps de jeu */
-  hltbExtra?: number;       /* Ajouté pour le temps de jeu */
-  hltbCompletionist?: number; /* Ajouté pour le temps de jeu */
+  id: string | number;
+  name: string;               // Utilisé par ton HTML et RAWG
+  title?: string;             // Conservé pour la compatibilité avec tes anciens packs
+  background_image?: string;  //
+  image?: string;
+  developer?: string;         //
+  publisher?: string;         //
+  status?: 'À faire' | 'En cours' | 'Fini' | 'Platiné' | string; // Type élargi pour accepter 'string' sans erreur
+  steamPrice?: SteamPriceData | null; //
+  hltbMain?: number;          //
+  hltbExtra?: number;         //
+  hltbCompletionist?: number; //
 }
 
 export interface GamePack {
@@ -23,8 +27,8 @@ export interface CalendarMonthData {
   gamesPlayed100: string[];
 }
 
-// Nouvelle interface ajoutée pour la gestion du prix Steam officiel via le proxy
 export interface SteamPriceData {
+  isFree: boolean;
   success: boolean;
   currency: string;
   initialPrice: string;

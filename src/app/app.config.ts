@@ -7,6 +7,6 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
     provideRouter(routes),
-    provideHttpClient() // <-- AJOUTER ICI pour activer internet
+    provideHttpClient()
   ]
 };

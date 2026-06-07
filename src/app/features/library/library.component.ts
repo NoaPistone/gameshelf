@@ -1,7 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { BacklogService, Game, GamePack } from '../../core/services/backlog.service';
+import { BacklogService }from '../../core/services/backlog.service';
+import { Game, GamePack } from '../../core/models/backlog.model';
+
 
 @Component({
   selector: 'app-library',
@@ -63,8 +65,8 @@ export class LibraryComponent {
       try {
         const titles = await this.backlogService.simulateOCRFromImage(input.files[0]);
         
-        // CORRECTION DE TYPAGE : Définition claire des types pour 't' (titre texte) et 'i' (index)
-        const ocrGames: Game[] = titles.map((t: string, i: number) => ({
+        
+        const ocrGames: Game[] = titles.map((t: any, i: number) => ({
           id: `ocr_${Date.now()}_${i}`,
           name: t,
           background_image: 'assets/images/ocr-placeholder.jpg',

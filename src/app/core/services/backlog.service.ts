@@ -1,21 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
-import { SteamPriceData } from '../models/backlog.model';
-
-export interface Game {
-  id: string | number;
-  name: string;
-  background_image?: string;
-  status?: string;
-  steamPrice?: SteamPriceData; // Injecté dynamiquement pour l'affichage
-}
-
-export interface GamePack {
-  id: string;
-  name: string;
-  games: Game[];
-}
+import { SteamPriceData, Game, GamePack} from '../models/backlog.model';
+import {  } from '../models/backlog.model';
 
 @Injectable({
   providedIn: 'root'
@@ -190,4 +177,56 @@ export class BacklogService {
       return null;
     }
   }
+
+  // --- AJOUT : MISE A JOUR DE LA BIBLIOTHEQUE GLOBALE ---
+  public updateGlobalLibrary(games: Game[]) {
+    this.globalLibrary.set(games);
+    localStorage.setItem('gameshelf_global_library', JSON.stringify(games));
+  }
+
+  // --- AJOUT : SIMULATION IMPORT EXCEL ---
+  async importExcelData(file: File): Promise<Game[]> {
+    console.log("Fichier Excel reçu :", file.name);
+    // Simulation de parsing. À remplacer par ta logique XLSX si nécessaire.
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: 'xl_' + Date.now(), name: 'Jeu Importé Excel', status: 'À faire' }
+        ]);
+      }, 1000);
+    });
+  }
+
+  // --- AJOUT : SIMULATION OCR ---
+  async simulateOCRFromImage(file: File): Promise<Game[]> {
+    console.log("Image reçue pour OCR globale :", file.name);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([
+          { id: 'ocr_' + Date.now(), name: 'Jeu Détecté via OCR', status: 'À faire' }
+        ]);
+      }, 1500);
+    });
+  }
+
+  // --- AJOUT : SIMULATION OCR VERS UN PACK ---
+  async importImageToPack(packId: string, file: File): Promise<void> {
+    console.log(`Image reçue pour OCR vers le pack ${packId} :`, file.name);
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const currentPacks = this.packs();
+        const updated = currentPacks.map(p => {
+          if (p.id === packId) {
+            const newGame: Game = { id: 'ocr_p_' + Date.now(), name: 'Jeu Scan Pack', status: 'À faire' };
+            return { ...p, games: [...p.games, newGame] };
+          }
+          return p;
+        });
+        this.packs.set(updated);
+        localStorage.setItem('gameshelf_packs', JSON.stringify(updated));
+        resolve();
+      }, 1500);
+    });
+  }
+
 }
