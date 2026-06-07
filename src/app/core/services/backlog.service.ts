@@ -1,13 +1,21 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable } from 'rxjs';
-import { SteamPriceData, Game, GamePack} from '../models/backlog.model';
-import {  } from '../models/backlog.model';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SteamPriceData, Game, GamePack } from '../models/backlog.model';
+import { AuthService } from './auth'; // Ajuste le chemin si nécessaire
+
+const SUPABASE_URL = 'https://ltkmkaridmxmmyuicgmi.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0a21rYXJpZG14bW15dWljZ21pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTcyOTQsImV4cCI6MjA5NjM5MzI5NH0.pY-14aM__yZkGdH07uuYNw6YJVYdi0mCU4bsPLAUCPA';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BacklogService {
+  private http = inject(HttpClient);
+  private authService = inject(AuthService);
+  private supabase: SupabaseClient;
+
   private apiKey = '751a79579994490aaa29bf0f1bd944a8';
   private baseUrl = 'https://api.rawg.io/api';
   private proxyUrl = 'http://localhost:3000/api';
@@ -15,11 +23,16 @@ export class BacklogService {
   public latestGames = signal<any[]>([]);
   public searchResults = signal<any[]>([]);
   public isSearching = signal<boolean>(false);
+  
+  // Contient l'état en cache local ou cloud récupéré
   private calendarData = signal<{ [key: string]: any }>({});
   public globalLibrary = signal<Game[]>([]);
   public packs = signal<GamePack[]>([]);
 
-  constructor(private http: HttpClient) {
+  private defaultMonthStructure = { gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] };
+
+  constructor() {
+    this.supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     this.loadFromLocalStorage();
     this.fetchLatestGames();
   }
@@ -57,25 +70,61 @@ export class BacklogService {
     localStorage.setItem('gameshelf_packs', JSON.stringify(this.packs()));
   }
 
-  public getMonthData(monthKey: string) {
-    const current = this.calendarData();
-    return current[monthKey] || { gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] };
+  /**
+   * Récupère de manière asynchrone les données d'un mois (Cloud en priorité, LocalStorage sinon)
+   */
+  public async getMonthData(monthKey: string): Promise<any> {
+    const user = this.authService.currentUser();
+    
+    if (!user) {
+      const current = this.calendarData();
+      return current[monthKey] || { ...this.defaultMonthStructure };
+    }
+
+    const { data, error } = await this.supabase
+      .from('backlogs')
+      .select('data')
+      .eq('user_id', user.id)
+      .eq('month_key', monthKey)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error("Erreur récupération Supabase :", error.message);
+    }
+
+    return data ? data.data : { ...this.defaultMonthStructure };
   }
 
-  public initializeMonthStructure(monthKey: string) {
-    const current = this.calendarData();
-    if (!current[monthKey]) {
-      current[monthKey] = { gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] };
+  /**
+   * Enregistre ou écrase les données du mois ciblé
+   */
+  public async updateMonthData(monthKey: string, newData: any) {
+    const user = this.authService.currentUser();
+
+    // Mode Invité : Sauvegarde locale classique
+    if (!user) {
+      const current = this.calendarData();
+      current[monthKey] = newData;
       this.calendarData.set({ ...current });
       this.saveCalendarToLocalStorage();
+      return;
     }
-  }
 
-  public updateMonthData(monthKey: string, newData: any) {
-    const current = this.calendarData();
-    current[monthKey] = newData;
-    this.calendarData.set({ ...current });
-    this.saveCalendarToLocalStorage();
+    // Mode Connecté : Envoi vers Supabase (upsert gère création et édition)
+    const { error } = await this.supabase
+      .from('backlogs')
+      .upsert({
+        user_id: user.id,
+        month_key: monthKey,
+        data: newData,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,month_key'
+      });
+
+    if (error) {
+      console.error("Erreur sauvegarde Supabase :", error.message);
+    }
   }
 
   public addPack(name: string) {
@@ -113,8 +162,6 @@ export class BacklogService {
         game.name.toLowerCase().includes(query.toLowerCase())
       ).slice(0, 8);
 
-      // On extrait les couples d'AppID pour chaque résultat de recherche
-      const appIdsMap: { [key: number]: any } = {};
       const appIdsList: number[] = [];
 
       strictResults.forEach((game: any) => {
@@ -129,7 +176,6 @@ export class BacklogService {
         }
       });
 
-      // Si on a trouvé des AppIDs Steam, on va chercher leurs prix en lot
       if (appIdsList.length > 0) {
         const prices = await firstValueFrom(this.getBulkSteamPrices(appIdsList));
         strictResults.forEach((game: any) => {
@@ -178,16 +224,13 @@ export class BacklogService {
     }
   }
 
-  // --- AJOUT : MISE A JOUR DE LA BIBLIOTHEQUE GLOBALE ---
   public updateGlobalLibrary(games: Game[]) {
     this.globalLibrary.set(games);
     localStorage.setItem('gameshelf_global_library', JSON.stringify(games));
   }
 
-  // --- AJOUT : SIMULATION IMPORT EXCEL ---
   async importExcelData(file: File): Promise<Game[]> {
     console.log("Fichier Excel reçu :", file.name);
-    // Simulation de parsing. À remplacer par ta logique XLSX si nécessaire.
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve([
@@ -197,7 +240,6 @@ export class BacklogService {
     });
   }
 
-  // --- AJOUT : SIMULATION OCR ---
   async simulateOCRFromImage(file: File): Promise<Game[]> {
     console.log("Image reçue pour OCR globale :", file.name);
     return new Promise((resolve) => {
@@ -209,7 +251,6 @@ export class BacklogService {
     });
   }
 
-  // --- AJOUT : SIMULATION OCR VERS UN PACK ---
   async importImageToPack(packId: string, file: File): Promise<void> {
     console.log(`Image reçue pour OCR vers le pack ${packId} :`, file.name);
     return new Promise((resolve) => {
@@ -228,5 +269,4 @@ export class BacklogService {
       }, 1500);
     });
   }
-
 }

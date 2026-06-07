@@ -2,9 +2,9 @@ import { Component, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BacklogService } from '../../core/services/backlog.service';
+import { AuthService } from '../../core/services/auth'; // Chemin vers ton service d'authentification
 import { Router, RouterModule } from '@angular/router'; 
 
-// Définition d'un type strict pour éviter les erreurs d'indexation
 export type CalendarCategory = 'gamesBought' | 'gamesStarted' | 'gamesFinished' | 'gamesPlayed100';
 
 @Component({
@@ -16,6 +16,7 @@ export type CalendarCategory = 'gamesBought' | 'gamesStarted' | 'gamesFinished' 
 })
 export class HomeComponent {
   public backlogService = inject(BacklogService);
+  private authService = inject(AuthService);
   private router = inject(Router);
   
   public latestGames = this.backlogService.latestGames;
@@ -23,20 +24,19 @@ export class HomeComponent {
   public isSearching = this.backlogService.isSearching;
   public searchQuery = signal<string>('');
 
-  // Gestion du calendrier (Juin 2026 par défaut ou dynamique)
+  // Configuration temporelle du calendrier
   public currentYear = signal<number>(2026);
-  public currentMonth = signal<number>(5); // 5 correspond à Juin (0 = Janvier)
+  public currentMonth = signal<number>(5); // 5 = Juin
   public months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
   
-  // Tableau des catégories typé strictement pour le *ngFor du template HTML
   public calendarCategories: CalendarCategory[] = ['gamesBought', 'gamesStarted', 'gamesFinished', 'gamesPlayed100'];
 
   public monthKey = computed(() => `${this.currentYear()}-${(this.currentMonth() + 1).toString().padStart(2, '0')}`);
   
-  // Correction de l'erreur NG0600 : utilisation de getMonthData (qui est pure)
-  public monthData = computed(() => this.backlogService.getMonthData(this.monthKey()));
+  // Transformé en signal classique pour gérer l'asynchronisme de la base distante
+  public monthData = signal<any>({ gamesBought: [], gamesStarted: [], gamesFinished: [], gamesPlayed100: [] });
 
-  // Recherche indépendante pour les 4 colonnes du calendrier
+  // Recherche indépendante pour les 4 colonnes
   public columnInputs = {
     gamesBought: signal<string>(''),
     gamesStarted: signal<string>(''),
@@ -52,10 +52,13 @@ export class HomeComponent {
   };
 
   constructor() {
-    // Écoute les changements de monthKey et initialise de manière sûre dans LocalStorage si nécessaire
-    effect(() => {
+    // L'effet surveille le changement de mois OU la connexion de l'utilisateur pour charger dynamiquement
+    effect(async () => {
       const key = this.monthKey();
-      this.backlogService.initializeMonthStructure(key);
+      const user = this.authService.currentUser(); // Réagit si l'utilisateur s'identifie/se déconnecte
+      
+      const data = await this.backlogService.getMonthData(key);
+      this.monthData.set(data);
     }, { allowSignalWrites: true });
   }
 
@@ -77,31 +80,31 @@ export class HomeComponent {
     this.router.navigate(['/game', slug]);
   }
 
-  addItemDirectly(cat: CalendarCategory, game: any) {
+  async addItemDirectly(cat: CalendarCategory, game: any) {
     const d = { ...this.monthData() };
     
-    // On crée un objet structuré avec le nom et l'image récupérée de l'API RAWG
     const gameItem = {
       name: game.name,
       image: game.background_image || 'assets/images/placeholder-game.jpg'
     };
 
+    // Ajout local réactif immédiat à l'écran
     d[cat] = [...d[cat], gameItem];
+    this.monthData.set(d);
     
-    // Met à jour le calendrier et lance la sauvegarde LocalStorage automatique
-    this.backlogService.updateMonthData(this.monthKey(), d);
+    // Écriture asynchrone (Supabase ou LocalStorage selon le statut)
+    await this.backlogService.updateMonthData(this.monthKey(), d);
     
-    // Nettoyage des champs de recherche de la colonne concernée
     this.columnInputs[cat].set('');
     this.columnResults[cat].set([]);
   }
 
-  removeItem(cat: CalendarCategory, i: number) { 
+  async removeItem(cat: CalendarCategory, i: number) { 
     const d = { ...this.monthData() }; 
     d[cat] = d[cat].filter((_: any, idx: number) => idx !== i); 
     
-    // Met à jour le calendrier et actualise la sauvegarde locale
-    this.backlogService.updateMonthData(this.monthKey(), d); 
+    this.monthData.set(d);
+    await this.backlogService.updateMonthData(this.monthKey(), d); 
   }
 
   changeMonth(delta: number) { 
