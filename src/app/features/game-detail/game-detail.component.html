@@ -52,7 +52,7 @@
   </div>
 
   <div class="keys-comparison-section">
-    <h2>🔑 Meilleures offres de clés & stores (Trié par prix croissant)</h2>
+    <h2>Meilleures offres de clés & stores (Trié par prix croissant)</h2>
     
     <div class="keys-grid" *ngIf="keyStores().length > 0; else noKeys">
       <div class="key-row header-row">
@@ -62,7 +62,7 @@
       </div>
       
       <div class="key-row" *ngFor="let deal of keyStores()">
-        <div class="store-name">🛒 {{ getStoreName(deal.storeID) }}</div>
+        <div class="store-name">{{ getStoreName(deal.storeID) }}</div>
         <div class="store-price">{{ deal.price }} $</div>
         <div>
           <a [href]="'https://www.cheapshark.com/redirect?dealID=' + deal.dealID" target="_blank" class="buy-key-btn">

@@ -22,7 +22,7 @@
 
 <div class="dashboard-content">
   <section class="latest-section">
-    <h2>⚡ Sorties Récents du Catalogue</h2>
+    <h2>Sorties Récents du Catalogue</h2>
     <div class="latest-grid">
       <div *ngFor="let game of latestGames()" class="game-card" (click)="openGameDetails(game.slug)">
         <img [src]="game.background_image" [alt]="game.name" />
@@ -36,7 +36,7 @@
 
   <section class="calendar-section">
     <div class="calendar-header">
-      <h2>📅 Chronologie Personnelle</h2>
+      <h2>Chronologie Personnelle</h2>
       <div class="month-selector">
         <button (click)="changeMonth(-1)">◀</button>
         <span>{{ months[currentMonth()] }} {{ currentYear() }}</span>

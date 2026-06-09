@@ -1,3 +1,5 @@
+//fichier de test unitaire automatisé
+
 import { TestBed } from '@angular/core/testing';
 
 import { Auth } from './auth';
